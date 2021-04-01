@@ -1,12 +1,12 @@
 Rippa = function() {
     this.render = function(canvas) {
-        if (canvas.getContext) {
+        if (canvas) {
             if(context) {
                 var ctx = canvas.getContext('2d');
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                renderTileView(context, ctx);    
+                this.renderTileView(ctx);    
             }
         }
     };
@@ -22,6 +22,7 @@ Rippa = function() {
     }
     
     this.renderTileView = function(ctx) {
+        var context = this.context;
         var blob = context.blob;
         var nav = context.navigation;
         var tile = context.tileAttr;
@@ -38,7 +39,7 @@ Rippa = function() {
             var cx = view.margin.w;
             while (!eos && (cx + tile.size.w) < canvas.width) {
                 if (offset < blob.size) {
-                    drawTile(ctx, cx, cy, offset);
+                    this.drawTile(ctx, cx, cy, offset);
                 
                     cx += tile.size.w + view.spacing.h;
                     offset += tile.stride * tile.size.h;
@@ -52,9 +53,11 @@ Rippa = function() {
     }
     
     this.drawTile = function(ctx, cx, cy, offset) {
-        tile = context.tileAttr;
-        palette = context.palette;
-        view = context.viewAttr;
+        var context = this.context;
+        var tile = context.tileAttr;
+        var palette = context.palette;
+        var view = context.viewAttr;
+        var blob = context.blob;
         
         var plane = context.planeAttr;
         
