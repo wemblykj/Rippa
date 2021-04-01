@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8"/>
+  <script type="application/javascript" src="Rippa.js"></script>
+  <script type="application/javascript">
+    function onOpenFile(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        
+        var fileList = event.target.files;
+        
+         // access files via fileList
+        openFile(fileList[0]);
+    }
+    
+    function drop(event) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        var fileList = event.dataTransfer.files;
+
+        var file = fileList[0]
+        
+        // access files via fileList
+        openFile(file);
+        
+        // update file select text
+        //var fileSelect = document.getElementById("fileSelect");
+        //fileSelect.files.clear();
+        //fileSelect.files.append(file);
+    }
+
+    function openFile(file) {
+        context.blob = file;
+        render();
+    }
+   
+    function dragOver(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    }
+    
+    function render() {  
+        var canvas = document.getElementById('canvas');
+        if (context.blob !== null) {
+            rippa.render(context, canvas);
+        }
+   }
+    
+    function updateTileUI(tileAttr) {
+        var tileWidth = document.getElementById("tileWidth");
+        tileWidth.value = tileAttr.size.w;
+        
+        var tileHeight = document.getElementById("tileHeight");
+        tileHeight.value = tileAttr.size.h;
+    }
+    
+    function updatePlaneUI(planeAttr) {
+        var planeCount = document.getElementById("planeCount");
+        planeCount.value = planeAttr.planeCount;
+    }
+    
+    function updateUI() {
+        updateTileUI(context.tileAttr);
+        updatePlaneUI(context.planeAttr);
+    }
+    
+    function onTileAttrChanged(event) {
+        if (event.target.id == "tileWidth") {
+            context.tileAttr.size.w = parseInt(event.target.value);
+        } else if (event.target.id == "tileHeight") {
+            context.tileAttr.size.h = parseInt(event.target.value);
+        }
+        
+        render();
+    }
+    
+    function onPlaneAttrChanged(event) {
+        if (event.target.id == "planeCount") {
+            context.planeAttr.planeCount = parseInt(event.target.value);
+        }
+        
+        render();
+    }
+    
+    function onLoad() {
+        var dropZone = document.getElementById("canvas");
+        dropZone.addEventListener("dragover", dragOver, false);
+        dropZone.addEventListener("drop"    , drop    , false);
+        
+        testData = new Uint8Array(
+        [
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00]);
+        context.blob = new Blob([testData.buffer]);
+        
+        var rgbArray = [];//['rgb(255, 255, 255)'];
+        var paletteIndex;
+        for (paletteIndex = 0; paletteIndex < 256; ++paletteIndex) {
+            var intensity = (((paletteIndex >> 3)+1)*8)-1;
+            var r = intensity * ((paletteIndex & 0x02) >> 1);
+            var g = intensity * ((paletteIndex & 0x04) >> 2);
+            var b = intensity * (paletteIndex & 0x01);
+            
+            rgb = `rgb(${r}, ${g}, ${b})`;
+            
+            rgbArray[paletteIndex] = rgb;
+        }
+        
+        context.palette = new Palette(8, rgbArray);
+        
+        rippa.setContext(context);
+        
+        updateUI();        
+        render();
+    }
+    
+    var rippa = new Rippa();
+    var context = rippa.createContext();
+    
+  </script>
+ </head>
+ <body onload="onLoad();">
+  <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
+  <div>
+    <canvas id="canvas" width="256" height="192"></canvas>
+  </div>
+  <div>
+    <span>
+        <input id="tileWidth" type="number" onchange="onTileAttrChanged(event)"/>
+        <input id="tileHeight" type="number" onchange="onTileAttrChanged(event)"/>
+    </span>
+  </div>
+  <div>
+    <span>
+        <input id="planeCount" type="number" onchange="onPlaneAttrChanged(event)"/>
+    </span>
+  </div>
+ </body>
+</html>
