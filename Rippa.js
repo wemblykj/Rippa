@@ -34,7 +34,8 @@ Rippa = function() {
         ctx.fillStyle = 'rgb(200, 0, 0)';
         
         var cy = view.margin.h;
-        eos = false;
+        var eos = false;
+        
         while (!eos && (cy + tile.size.h) < canvas.height) {
             var cx = view.margin.w;
             while (!eos && (cx + tile.size.w) < canvas.width) {
@@ -42,7 +43,7 @@ Rippa = function() {
                     this.drawTile(ctx, cx, cy, offset);
                 
                     cx += tile.size.w + view.spacing.h;
-                    offset += tile.stride * tile.size.h;
+                    offset += (tile.size.w * tile.size.h) / plane.pixelsPerByte;
                 } else {
                     eos = true;
                 }
@@ -65,44 +66,78 @@ Rippa = function() {
         for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
             var y = cy + rowIndex;
         
-            // interleaved
-            start = offset + tile.stride * rowIndex;
-            end = start + tile.size.w;
-            
-            tileData = blob.slice(start, end);
-            
             ((y) => {    // capture y value
-                tileData.arrayBuffer().then(buffer => {
-                lineData = new Uint8Array(buffer)
-                
-                var buffer = new ArrayBuffer(tile.size.w);
-                var pixelData = new Uint8Array(buffer);
-            
-                var columnIndex;
-                for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
-                    var planeIndex;
-                    for (planeIndex = 0; planeIndex < plane.planeCount; ++planeIndex) {
-                        var mask = 1 << planeIndex;
+                switch(plane.packing) {
+                    case 0: 
+                    case 1: 
+                        // interleaved
                         
-                        if ((mask & view.planeMask) != 0) {
-                            var ofs = Math.floor(columnIndex / plane.planeCount);
+                        // get single contiguous line buffer for all planes
+                        // ABCDABCD ABCDABCD ABCDABCD ABCDABCD or
+                        start = offset + tile.stride * rowIndex;
+                        end = start + tile.size.w;
+
+                        tileData = blob.slice(start, end);					
+                        tileData.arrayBuffer().then(buffer => {
                         
-                            var tileByte = lineData[ofs];
-                            var planeData = (tileByte &  mask);
-                            pixelData[columnIndex] |= planeData;
-                        }
-                    }
-                }
-                
-                for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
-                    ctx.fillStyle = palette.ToRGB(pixelData[columnIndex]);
-                                        
-                    var x = cx + columnIndex;
-                    ctx.fillRect(x, y, 1, 1);
-                }
-              });
+                            lineData = new Uint8Array(buffer)
+                            
+                            // pre-calculate some constants
+                            var nsm = (2**plane.planeCount) - 1;    // non-shifted mask
+
+                            var columnIndex;
+                            for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
+                                // initalise our pixel [ABCD]
+                                var pixel = 0;
+                                
+                                if (plane.packing == 0) {
+                                    // planes are packed in a single byte (assuming not supporting planes over 8-bits)
+                                    // e.g. for eight packed pixels:
+                                    // ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH 8-bit
+                                    // ABCDABCD ABCDABCD ABCDABCD ABCDABCD  4-bit
+                                    // ABABABAB ABABABAB  2-bit
+                                    var ofs = Math.floor(columnIndex / plane.pixelsPerByte);
+                                    var tileByte = lineData[ofs];
+
+                                    if (plane.pixelsPerByte > 1) {
+                                      var lsb = Math.floor(columnIndex / plane.planeCount);		
+                                      var mask = nsm << lsb;
+                                      pixel = (tileByte & mask) >> lsb; 
+                                    } else {
+                                      pixel = tileByte; 
+                                    }
+
+                                } else {
+                                    // planes [A,B,C and D] are spread across interleaved bytes
+                                    // AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
+                                    var planeIndex;
+                                    for (planeIndex = 0; planeIndex < plane.planeCount; ++planeIndex) {
+                                      var mask = 1 << planeIndex;
+                                      
+                                      if ((mask & view.planeMask) != 0) {
+                                        var ofs = Math.floor(columnIndex / plane.planeCount);
+                                      
+                                        var tileByte = lineData[ofs];
+                                        var planeData = (tileByte &  mask);
+                                        pixel |= planeData;
+                                      }
+                                    }
+                                }
+
+                                // apply plane view mask
+                                pixel &= view.planeMask;
+                                
+                                // draw resultant pixel
+                                ctx.fillStyle = palette.ToRGB(pixel);
+                                          
+                                var x = cx + columnIndex;
+                                ctx.fillRect(x, y, 1, 1);	
+                            } // for each column
+                        });
+                    break; // case Interleaved
+                } // switch packing
             })(y);
-        }
+        } // for each row
     }
     
     var Context = function() {
@@ -145,8 +180,12 @@ Rippa = function() {
 
     PlaneAttributes = function(planeCount) {
       this.planeCount = planeCount;
-      this.interleaved = true;
-      //this.planeAttr.stride = 0;
+      this.pixelsPerByte = 8/planeCount; 
+      this.packing = 0;
+      this.setPlaneCount = function(planeCount) {
+        this.planeCount = planeCount
+        this.pixelsPerByte = 8/planeCount; 
+      };
     }
 
     ViewAttributes = function(planeMask = 0xff) {
@@ -155,11 +194,11 @@ Rippa = function() {
       this.planeMask = planeMask;
     }
 
-    Palette = function(bpp, rgbArray) {
-      this.bitsPerPixel = bpp;
+    Palette = function(bitsPerPixel, rgbArray) {
+      this.bpp = bitsPerPixel;
       this.rgbArray = rgbArray;
       this.ToRGB = function(index) {
-        var i = (index % this.bpp) << (8-this.bpp);
+        var i = index & ((2**this.bpp)-1);
         return this.rgbArray[i];
       };
     }

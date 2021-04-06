@@ -49,6 +49,11 @@
         }
    }
     
+   function updateNavigationUI(nav) {
+        var offset = document.getElementById("offset");
+        offset.value = nav.offset;
+   }
+
     function updateTileUI(tileAttr) {
         var tileWidth = document.getElementById("tileWidth");
         tileWidth.value = tileAttr.size.w;
@@ -60,13 +65,24 @@
     function updatePlaneUI(planeAttr) {
         var planeCount = document.getElementById("planeCount");
         planeCount.value = planeAttr.planeCount;
+        var planePacking = document.getElementById("planePacking");
+        planePacking.value = planeAttr.packing;
     }
     
     function updateUI() {
+        updateNavigationUI(context.navigation);
         updateTileUI(context.tileAttr);
         updatePlaneUI(context.planeAttr);
     }
     
+    function onNavigationChanged(event) {
+        if (event.target.id == "offset") {
+            context.navigation.offset = parseInt(event.target.value);
+        }
+        
+        render();
+    }
+
     function onTileAttrChanged(event) {
         if (event.target.id == "tileWidth") {
             context.tileAttr.size.w = parseInt(event.target.value);
@@ -79,7 +95,9 @@
     
     function onPlaneAttrChanged(event) {
         if (event.target.id == "planeCount") {
-            context.planeAttr.planeCount = parseInt(event.target.value);
+            context.planeAttr.setPlaneCount(parseInt(event.target.value));
+        } else if (event.target.id == "planePacking") {
+            context.planeAttr.packing = parseInt(event.target.value);
         }
         
         render();
@@ -92,6 +110,7 @@
         
         testData = new Uint8Array(
         [
+        // 8x8 8-bit
         0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
@@ -99,13 +118,60 @@
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
-        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00]);
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+        // 8x8 8-bit
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+        // 8x8 4-bit
+        0x0f, 0xff, 0xff, 0xf0,
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0x0f, 0xff, 0xff, 0xf0, 
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0x0f, 0xff, 0xff, 0xf0,
+        // 8x8 4-bit
+        0x0f, 0xff, 0xff, 0xf0,
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0x0f, 0xff, 0xff, 0xf0, 
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0xf0, 0x00, 0x00, 0x0f,
+        0x0f, 0xff, 0xff, 0xf0,
+        // 8x8 2-bit
+        0x3f, 0xfc,
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0x0f, 0xfc, 
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0x3f, 0xfc,
+        // 8x8 2-b
+        0x0f, 0xfc,
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0x0f, 0xfc, 
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0xc0, 0x03,
+        0x3f, 0xfc]);
+
         context.blob = new Blob([testData.buffer]);
         
         var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;
-        for (paletteIndex = 0; paletteIndex < 256; ++paletteIndex) {
-            var intensity = (((paletteIndex >> 3)+1)*8)-1;
+        var bpp = 4;
+        for (paletteIndex = 0; paletteIndex < (2**bpp); ++paletteIndex) {
+            var intensity = (((paletteIndex >> 3)+1)<<(11-bpp))-1;
             var r = intensity * ((paletteIndex & 0x02) >> 1);
             var g = intensity * ((paletteIndex & 0x04) >> 2);
             var b = intensity * (paletteIndex & 0x01);
@@ -115,7 +181,7 @@
             rgbArray[paletteIndex] = rgb;
         }
         
-        context.palette = new Palette(8, rgbArray);
+        context.palette = new Palette(bpp, rgbArray);
         
         rippa.setContext(context);
         
@@ -135,13 +201,34 @@
   </div>
   <div>
     <span>
+        <label for="offset">Offset</label>
+        <input id="offset" type="number" onchange="onNavigationChanged(event)"/>
+    </span>
+  </div>
+  <div>
+    <span>
+        <label for="tileWidth">Tile width</label>
         <input id="tileWidth" type="number" onchange="onTileAttrChanged(event)"/>
+        <label for="tileHeight">Tile height</label>
         <input id="tileHeight" type="number" onchange="onTileAttrChanged(event)"/>
     </span>
   </div>
   <div>
     <span>
-        <input id="planeCount" type="number" onchange="onPlaneAttrChanged(event)"/>
+        <label for="planeCount">Plane count</label>
+        <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event)">
+            <option value="1">1-bit</option>
+            <option value="2">2-bit</option>
+            <option value="4">4-bit</option>
+            <option value="8">8-bit</option>
+        </select>
+        <label for="planePacking">Plane packing</label>
+        <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event)"/>
+            <option value="0">Interleaved</option>
+            <option value="1">Byte</option>
+            <option value="2">Line</option>
+            <option value="3">Tile</option>
+        </select>
     </span>
   </div>
  </body>
