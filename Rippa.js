@@ -4,8 +4,6 @@ Rippa = function() {
             if(context) {
                 var ctx = canvas.getContext('2d');
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
                 this.renderTileView(ctx);    
             }
         }
@@ -31,25 +29,36 @@ Rippa = function() {
         
         var offset = nav.offset;
         
-        ctx.fillStyle = 'rgb(200, 0, 0)';
+        var tw = tile.size.w + view.spacing.w;
+        var th = tile.size.h + view.spacing.h;
+        var maxColumns = Math.floor((canvas.width - (2 * view.margin.w)) / tw);
+        var maxRows = Math.floor((canvas.height - (2 * view.margin.h)) / th);
+        var bw = 2 * view.margin.h + (maxColumns * tw);
+        var bh = 2 * view.margin.h + (maxRows * th);
+        
+        ctx.fillStyle = 'rgb(80, 80, 80)';
+        ctx.fillRect(0,0, bw, bh);
         
         var cy = view.margin.h;
         var eos = false;
         
-        while (!eos && (cy + tile.size.h) < canvas.height) {
+        var row;
+        for (row = 0; !eos && row < maxRows; ++row) {
             var cx = view.margin.w;
-            while (!eos && (cx + tile.size.w) < canvas.width) {
+            
+            var column;
+            for (column = 0; !eos && column < maxColumns; ++column) {
                 if (offset < blob.size) {
                     this.drawTile(ctx, cx, cy, offset);
                 
-                    cx += tile.size.w + view.spacing.h;
+                    cx += tw;
                     offset += (tile.size.w * tile.size.h) / plane.pixelsPerByte;
                 } else {
                     eos = true;
                 }
             }
             
-            cy += tile.size.h + view.spacing.h;
+            cy += th;
         }
     }
     
@@ -74,7 +83,7 @@ Rippa = function() {
                         
                         // get single contiguous line buffer for all planes
                         // ABCDABCD ABCDABCD ABCDABCD ABCDABCD or
-                        start = offset + tile.stride * rowIndex;
+                        start = offset + (tile.stride * rowIndex) / plane.pixelsPerByte;
                         end = start + tile.size.w;
 
                         tileData = blob.slice(start, end);					
@@ -100,9 +109,9 @@ Rippa = function() {
                                     var tileByte = lineData[ofs];
 
                                     if (plane.pixelsPerByte > 1) {
-                                      var lsb = Math.floor(columnIndex / plane.planeCount);		
-                                      var mask = nsm << lsb;
-                                      pixel = (tileByte & mask) >> lsb; 
+                                      var lsb = Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount;		
+                                      //var mask = nsm << lsb;
+                                      pixel = (tileByte >> lsb) & nsm; 
                                     } else {
                                       pixel = tileByte; 
                                     }

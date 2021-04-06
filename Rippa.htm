@@ -44,11 +44,23 @@
     
     function render() {  
         var canvas = document.getElementById('canvas');
-        if (context.blob !== null) {
-            rippa.render(canvas);
+        var ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
+            
+            if (context.blob !== null) {
+                rippa.render(canvas);
+            }
         }
    }
     
+   function updateViewUI(nav) {
+        var zoomCtl = document.getElementById("zoom");
+        zoomCtl.value = Math.floor(zoom * 100);
+   }
+   
    function updateNavigationUI(nav) {
         var offset = document.getElementById("offset");
         offset.value = nav.offset;
@@ -70,9 +82,18 @@
     }
     
     function updateUI() {
+        updateViewUI();
         updateNavigationUI(context.navigation);
         updateTileUI(context.tileAttr);
         updatePlaneUI(context.planeAttr);
+    }
+    
+    function onViewChanged(event) {
+        if (event.target.id == "zoom") {
+            zoom = parseInt(event.target.value) / 100.0;
+        }
+        
+        render();
     }
     
     function onNavigationChanged(event) {
@@ -129,23 +150,23 @@
         0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
         0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
         // 8x8 4-bit
-        0x0f, 0xff, 0xff, 0xf0,
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0x0f, 0xff, 0xff, 0xf0, 
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0x0f, 0xff, 0xff, 0xf0,
+        0xf0, 0xff, 0xff, 0x0f,
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0xf0, 0xff, 0xff, 0x0f, 
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0xf0, 0xff, 0xff, 0x0f,
         // 8x8 4-bit
-        0x0f, 0xff, 0xff, 0xf0,
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0x0f, 0xff, 0xff, 0xf0, 
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0xf0, 0x00, 0x00, 0x0f,
-        0x0f, 0xff, 0xff, 0xf0,
+         0xf0, 0xff, 0xff, 0x0f,
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0xf0, 0xff, 0xff, 0x0f, 
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0x0f, 0x00, 0x00, 0xf0,
+        0xf0, 0xff, 0xff, 0x0f,
         // 8x8 2-bit
         0x3f, 0xfc,
         0xc0, 0x03,
@@ -155,7 +176,7 @@
         0xc0, 0x03,
         0xc0, 0x03,
         0x3f, 0xfc,
-        // 8x8 2-b
+        // 8x8 2-bit
         0x0f, 0xfc,
         0xc0, 0x03,
         0xc0, 0x03,
@@ -163,7 +184,25 @@
         0xc0, 0x03,
         0xc0, 0x03,
         0xc0, 0x03,
-        0x3f, 0xfc]);
+        0x3f, 0xfc,
+        // 8x8 1-bit
+        0x7e,
+        0x81,
+        0x81,
+        0x7e, 
+        0x81,
+        0x81,
+        0x81,
+        0x7e,
+        // 8x8 1-bit
+        0x7e,
+        0x81,
+        0x81,
+        0x7e, 
+        0x81,
+        0x81,
+        0x81,
+        0x7e]);
 
         context.blob = new Blob([testData.buffer]);
         
@@ -191,6 +230,7 @@
     
     var rippa = new Rippa();
     var context = rippa.createContext();
+    var zoom = 4.0;
     
   </script>
  </head>
@@ -198,6 +238,12 @@
   <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
   <div>
     <canvas id="canvas" width="256" height="192"></canvas>
+  </div>
+  <div>
+    <span>
+        <label for="zoom">Zoom</label>
+        <input id="zoom" type="number" onchange="onViewChanged(event)"/>
+    </span>
   </div>
   <div>
     <span>
