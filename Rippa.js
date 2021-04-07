@@ -1,10 +1,15 @@
 Rippa = function() {
-    this.render = function(canvas) {
+    this.render = async function(canvas) {
         if (canvas) {
             if(context) {
                 var ctx = canvas.getContext('2d');
 
-                this.renderTileView(ctx);    
+				if (context.viewAttr.clear) {
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+				}
+				
+				var offset = context.navigation.offset;
+                return this.renderTileView(ctx, offset);    
             }
         }
     };
@@ -19,15 +24,15 @@ Rippa = function() {
         return context;
     }
     
-    this.renderTileView = function(ctx) {
+    this.renderTileView = async function(ctx, offset) {
         var context = this.context;
-        var blob = context.blob;
-        var nav = context.navigation;
+        //var blob = context.blob;
+        //var nav = context.navigation;
         var tile = context.tileAttr;
         var plane = context.planeAttr;
         var view = context.viewAttr;
         
-        var offset = nav.offset;
+        //var offset = nav.offset;
         
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
@@ -42,27 +47,54 @@ Rippa = function() {
         var cy = view.margin.v;
         var eos = false;
         
+		let promises = [];
+		
         var row;
-        for (row = 0; !eos && row < maxRows; ++row) {
+        for (row = 0; row < maxRows; ++row) {
             var cx = view.margin.h;
-            
-            var column;
-            for (column = 0; !eos && column < maxColumns; ++column) {
-                if (offset < blob.size) {
-                    this.drawTile(ctx, cx, cy, offset);
-                
-                    cx += tw;
-                    offset += (tile.size.w * tile.size.h) / plane.pixelsPerByte;
-                } else {
-                    eos = true;
-                }
-            }
-            
-            cy += th;
+        
+			promises += this.renderRow(ctx, offset, cx, cy);
+			
+			offset += (tile.size.w * maxRows) / plane.pixelsPerByte;
+			cy += th;
         }
+		
+		return promises;
     }
     
-    this.drawTile = function(ctx, cx, cy, offset) {
+	this.renderRow = async function(ctx, offset, cx, cy) {
+		var context = this.context;
+        var blob = context.blob;
+        //var nav = context.navigation;
+        var tile = context.tileAttr;
+        var plane = context.planeAttr;
+        var view = context.viewAttr;
+        
+        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+        //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
+        var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
+        //var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
+        var bw = 2 * view.margin.h + (maxColumns * tw);
+        //var bh = 2 * view.margin.v + (maxRows * th);
+		
+		let promises = [];
+		
+		var column;
+		for (column = 0; column < maxColumns; ++column) {
+			if (offset < blob.size) {
+				promises += this.drawTile(ctx, offset, cx, cy);
+			
+				offset += (tile.size.w * tile.size.h) / plane.pixelsPerByte;
+				cx += tw;
+			} else {
+				break;
+			}
+		}
+		
+		return promises;
+	}
+	
+    this.drawTile = async function(ctx, offset, cx, cy) {
         var context = this.context;
         var tile = context.tileAttr;
         var palette = context.palette;
@@ -71,88 +103,106 @@ Rippa = function() {
         
         var plane = context.planeAttr;
         
-        var rowIndex;
-        for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
-            var y = cy + (rowIndex * view.zoom.v);
-        
-            ((y) => {    // capture y value
-                switch(plane.packing) {
-                    case 0: 
-                    case 1: 
-                        // interleaved
-                        
-                        // get single contiguous line buffer for all planes
-                        // ABCDABCD ABCDABCD ABCDABCD ABCDABCD or
-                        start = offset + (tile.stride * rowIndex) / plane.pixelsPerByte;
-                        end = start + tile.size.w;
-
-                        tileData = blob.slice(start, end);					
-                        tileData.arrayBuffer().then(buffer => {
-                        
-                            lineData = new Uint8Array(buffer)
-                            
-                            // pre-calculate some constants
-                            var nsm = (2**plane.planeCount) - 1;    // non-shifted mask
-
-                            var columnIndex;
-                            for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
-                                // initalise our pixel [ABCD]
-                                var pixel = 0;
-                                
-                                if (plane.packing == 0) {
-                                    // planes are packed in a single byte (assuming not supporting planes over 8-bits)
-                                    // e.g. for eight packed pixels:
-                                    // ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH 8-bit
-                                    // ABCDABCD ABCDABCD ABCDABCD ABCDABCD  4-bit
-                                    // ABABABAB ABABABAB  2-bit
-                                    var ofs = Math.floor(columnIndex / plane.pixelsPerByte);
-                                    var tileByte = lineData[ofs];
-
-                                    if (plane.pixelsPerByte > 1) {
-                                        if (plane.endian == 0) {
-                                          var lsb = Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount;		
-                                          //var mask = nsm << lsb;
-                                          pixel = (tileByte >> lsb) & nsm; 
-                                        } else {
-                                            var lsb = 8-plane.planeCount-(Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount);		
-                                            //var mask = nsm << lsb;
-                                            pixel = (tileByte >> lsb) & nsm; 
-                                        }
-                                    } else {
-                                      pixel = tileByte; 
-                                    }
-
-                                } else {
-                                    // planes [A,B,C and D] are spread across interleaved bytes
-                                    // AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
-                                    var planeIndex;
-                                    for (planeIndex = 0; planeIndex < plane.planeCount; ++planeIndex) {
-                                      var mask = 1 << planeIndex;
-                                      
-                                      if ((mask & view.planeMask) != 0) {
-                                        var ofs = Math.floor(columnIndex / plane.planeCount);
-                                      
-                                        var tileByte = lineData[ofs];
-                                        var planeData = (tileByte &  mask);
-                                        pixel |= planeData;
-                                      }
-                                    }
-                                }
-
-                                // apply plane view mask
-                                pixel &= view.planeMask;
-                                
-                                // draw resultant pixel
-                                ctx.fillStyle = palette.ToRGB(pixel);
+		// draw a placeholder tile to show that this tile is being processed
+		ctx.fillStyle = 'rgb(0,0,0)';
                                           
-                                var x = cx + (columnIndex * view.zoom.h);
-                                ctx.fillRect(x, y, view.zoom.h, view.zoom.v);	
-                            } // for each column
-                        });
-                    break; // case Interleaved
-                } // switch packing
-            })(y);
-        } // for each row
+		ctx.fillRect(cx, cy, tile.size.w * view.zoom.h, tile.size.h * view.zoom.v);
+		
+		return new Promise(resolve => {
+		
+			start = offset;// + (tile.stride * rowIndex) / plane.pixelsPerByte;
+			end = start + (tile.size.w * tile.size.h) / plane.pixelsPerByte;
+							
+			tileData = blob.slice(start, end);					
+			tileData.arrayBuffer().then(buffer => {
+							
+				lineData = new Uint8Array(buffer)
+									
+				// now draw the tile		
+				var rowIndex;
+				for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
+					var y = cy + (rowIndex * view.zoom.v);
+				
+					var rowOfs = tile.size.w * rowIndex;
+					
+					switch(plane.packing) {
+						case 0: 
+						case 1: 
+							// interleaved
+							
+							// get single contiguous line buffer for all planes
+							// ABCDABCD ABCDABCD ABCDABCD ABCDABCD or
+							//start = offset + (tile.stride * rowIndex) / plane.pixelsPerByte;
+							//end = start + tile.size.w;
+
+							//tileData = blob.slice(start, end);					
+							//tileData.arrayBuffer().then(buffer => {
+							
+								//lineData = new Uint8Array(buffer)
+								
+								// pre-calculate some constants
+								var nsm = (2**plane.planeCount) - 1;    // non-shifted mask
+
+								var columnIndex;
+								for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
+									// initalise our pixel [ABCD]
+									var pixel = 0;
+									
+									if (plane.packing == 0) {
+										// planes are packed in a single byte (assuming not supporting planes over 8-bits)
+										// e.g. for eight packed pixels:
+										// ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH 8-bit
+										// ABCDABCD ABCDABCD ABCDABCD ABCDABCD  4-bit
+										// ABABABAB ABABABAB  2-bit
+										var ofs = rowOfs + Math.floor(columnIndex / plane.pixelsPerByte);
+										var tileByte = lineData[ofs];
+
+										if (plane.pixelsPerByte > 1) {
+											if (plane.endian == 0) {
+											  var lsb = Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount;		
+											  //var mask = nsm << lsb;
+											  pixel = (tileByte >> lsb) & nsm; 
+											} else {
+												var lsb = 8-plane.planeCount-(Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount);		
+												//var mask = nsm << lsb;
+												pixel = (tileByte >> lsb) & nsm; 
+											}
+										} else {
+										  pixel = tileByte; 
+										}
+
+									} else {
+										// planes [A,B,C and D] are spread across interleaved bytes
+										// AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
+										var planeIndex;
+										for (planeIndex = 0; planeIndex < plane.planeCount; ++planeIndex) {
+										  var mask = 1 << planeIndex;
+										  
+										  if ((mask & view.planeMask) != 0) {
+											var ofs = rowOfs + Math.floor(columnIndex / plane.planeCount);
+										  
+											var tileByte = lineData[ofs];
+											var planeData = (tileByte &  mask);
+											pixel |= planeData;
+										  }
+										}
+									}
+
+									// apply plane view mask
+									pixel &= view.planeMask;
+									
+									// draw resultant pixel
+									ctx.fillStyle = palette.ToRGB(pixel);
+											  
+									var x = cx + (columnIndex * view.zoom.h);
+									ctx.fillRect(x, y, view.zoom.h, view.zoom.v);	
+								} // for each column
+							//});
+						break; // case Interleaved
+					} // switch packing
+				} // for each row
+			}); // array buffer
+		});	// // promise
     }
     
     var Context = function() {
@@ -214,6 +264,7 @@ Rippa = function() {
       this.spacing = new Axis(2, 2);
       this.planeMask = planeMask;
       this.zoom = new Axis(1, 1);
+	  this.clear = true;
     }
 
     Palette = function(bitsPerPixel, rgbArray) {

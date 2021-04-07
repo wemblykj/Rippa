@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html>
  <head>
+ <style>
+    #canvas {
+      border-width: 1px;
+      border-style: solid;
+      border-color: Black;
+	  width: 100%;
+	  height: 100%;
+    }
+  </style>
   <meta charset="utf-8"/>
   <script type="application/javascript" src="Rippa.js"></script>
   <script type="application/javascript">
@@ -33,6 +42,8 @@
 
     function openFile(file) {
         context.blob = file;
+		context.viewAttr.clear = true;
+		
         render();
     }
    
@@ -42,16 +53,20 @@
         event.dataTransfer.dropEffect = 'copy';
     }
     
-    function render() {  
+    async function render() {  
         var canvas = document.getElementById('canvas');
+		
+		parentSize = canvas.parentNode.getBoundingClientRect();
+		canvas.width = parentSize.width;
+		canvas.height =parentSize.height;
+		
         var ctx = canvas.getContext('2d');
         
         if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             //ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
             
             if (context.blob !== null) {
-                rippa.render(canvas);
+                let promise = rippa.render(canvas);
             }
         }
    }
@@ -72,6 +87,8 @@
         
         var tileHeight = document.getElementById("tileHeight");
         tileHeight.value = tileAttr.size.h;
+		
+		context.viewAttr.clear = true;
     }
     
     function updatePlaneUI(planeAttr) {
@@ -92,6 +109,8 @@
         if (event.target.id == "zoom") {
             context.viewAttr.zoom.h = parseInt(event.target.value) / 100;
             context.viewAttr.zoom.v = context.viewAttr.zoom.h;
+			
+			context.viewAttr.clear = true;
         }
         
         render();
@@ -125,6 +144,10 @@
         render();
     }
     
+	function onResize() {
+		render();
+	}
+	
     function onLoad() {
         var dropZone = document.getElementById("canvas");
         dropZone.addEventListener("dragover", dragOver, false);
@@ -234,10 +257,10 @@
     
   </script>
  </head>
- <body onload="onLoad();">
+ <body onload="onLoad()" onresize="onResize()">
   <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
   <div>
-    <canvas id="canvas" width="256" height="192"></canvas>
+    <canvas id="canvas"></canvas>
   </div>
   <div>
     <span>
