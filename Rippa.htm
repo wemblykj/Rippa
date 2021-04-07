@@ -48,7 +48,7 @@
         
         if (ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
+            //ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
             
             if (context.blob !== null) {
                 rippa.render(canvas);
@@ -56,9 +56,9 @@
         }
    }
     
-   function updateViewUI(nav) {
+   function updateViewUI(view) {
         var zoomCtl = document.getElementById("zoom");
-        zoomCtl.value = Math.floor(zoom * 100);
+        zoomCtl.value = Math.floor(view.zoom.h * 100);
    }
    
    function updateNavigationUI(nav) {
@@ -82,7 +82,7 @@
     }
     
     function updateUI() {
-        updateViewUI();
+        updateViewUI(context.viewAttr);
         updateNavigationUI(context.navigation);
         updateTileUI(context.tileAttr);
         updatePlaneUI(context.planeAttr);
@@ -90,7 +90,8 @@
     
     function onViewChanged(event) {
         if (event.target.id == "zoom") {
-            zoom = parseInt(event.target.value) / 100.0;
+            context.viewAttr.zoom.h = parseInt(event.target.value) / 100;
+            context.viewAttr.zoom.v = context.viewAttr.zoom.h;
         }
         
         render();
@@ -230,7 +231,6 @@
     
     var rippa = new Rippa();
     var context = rippa.createContext();
-    var zoom = 4.0;
     
   </script>
  </head>

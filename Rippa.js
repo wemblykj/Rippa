@@ -29,22 +29,22 @@ Rippa = function() {
         
         var offset = nav.offset;
         
-        var tw = tile.size.w + view.spacing.w;
-        var th = tile.size.h + view.spacing.h;
-        var maxColumns = Math.floor((canvas.width - (2 * view.margin.w)) / tw);
-        var maxRows = Math.floor((canvas.height - (2 * view.margin.h)) / th);
+        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+        var th = (tile.size.h * view.zoom.v) + view.spacing.v;
+        var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
+        var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
         var bw = 2 * view.margin.h + (maxColumns * tw);
-        var bh = 2 * view.margin.h + (maxRows * th);
+        var bh = 2 * view.margin.v + (maxRows * th);
         
         ctx.fillStyle = 'rgb(80, 80, 80)';
         ctx.fillRect(0,0, bw, bh);
         
-        var cy = view.margin.h;
+        var cy = view.margin.v;
         var eos = false;
         
         var row;
         for (row = 0; !eos && row < maxRows; ++row) {
-            var cx = view.margin.w;
+            var cx = view.margin.h;
             
             var column;
             for (column = 0; !eos && column < maxColumns; ++column) {
@@ -73,7 +73,7 @@ Rippa = function() {
         
         var rowIndex;
         for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
-            var y = cy + rowIndex;
+            var y = cy + (rowIndex * view.zoom.v);
         
             ((y) => {    // capture y value
                 switch(plane.packing) {
@@ -109,9 +109,15 @@ Rippa = function() {
                                     var tileByte = lineData[ofs];
 
                                     if (plane.pixelsPerByte > 1) {
-                                      var lsb = Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount;		
-                                      //var mask = nsm << lsb;
-                                      pixel = (tileByte >> lsb) & nsm; 
+                                        if (plane.endian == 0) {
+                                          var lsb = Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount;		
+                                          //var mask = nsm << lsb;
+                                          pixel = (tileByte >> lsb) & nsm; 
+                                        } else {
+                                            var lsb = 8-plane.planeCount-(Math.floor(columnIndex % plane.pixelsPerByte) * plane.planeCount);		
+                                            //var mask = nsm << lsb;
+                                            pixel = (tileByte >> lsb) & nsm; 
+                                        }
                                     } else {
                                       pixel = tileByte; 
                                     }
@@ -139,8 +145,8 @@ Rippa = function() {
                                 // draw resultant pixel
                                 ctx.fillStyle = palette.ToRGB(pixel);
                                           
-                                var x = cx + columnIndex;
-                                ctx.fillRect(x, y, 1, 1);	
+                                var x = cx + (columnIndex * view.zoom.h);
+                                ctx.fillRect(x, y, view.zoom.h, view.zoom.v);	
                             } // for each column
                         });
                     break; // case Interleaved
@@ -161,6 +167,11 @@ Rippa = function() {
         this.planeAttr = new PlaneAttributes(8);
     }
 
+    Axis = function(h, v) {
+      this.h = h;
+      this.v = v;
+    }
+    
     Size = function(w, h) {
       this.w = w;
       this.h = h;
@@ -191,6 +202,7 @@ Rippa = function() {
       this.planeCount = planeCount;
       this.pixelsPerByte = 8/planeCount; 
       this.packing = 0;
+      this.endian = 0;
       this.setPlaneCount = function(planeCount) {
         this.planeCount = planeCount
         this.pixelsPerByte = 8/planeCount; 
@@ -198,9 +210,10 @@ Rippa = function() {
     }
 
     ViewAttributes = function(planeMask = 0xff) {
-      this.margin = new Size(2, 2);
-      this.spacing = new Size(2, 2);
+      this.margin = new Axis(2, 2);
+      this.spacing = new Axis(2, 2);
       this.planeMask = planeMask;
+      this.zoom = new Axis(1, 1);
     }
 
     Palette = function(bitsPerPixel, rgbArray) {
