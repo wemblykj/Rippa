@@ -106,8 +106,8 @@ export function Rippa() {
 				}
 				
 				var offset = context.navigation.offset;
-                //return Promise.race(this.renderTileView(ctx, offset));    
-				return this.renderTileView(context, ctx, offset);    
+                return Promise.race(this.renderTileView(context, ctx, offset));    
+				//return this.renderTileView(context, ctx, offset);    
             }
         }
     };
@@ -148,7 +148,7 @@ export function Rippa() {
 			cy += th;
         }
 		
-		return promises;
+		return Promise.race(promises);
     }
     
 	this.renderRow = async function(context, ctx, offset, cx, cy) {
@@ -179,7 +179,7 @@ export function Rippa() {
 			}
 		}
 		
-		return promises;
+		return Promise.race(promises);
 	}
 	
     this.drawTile = async function(context, ctx, offset, cx, cy) {
