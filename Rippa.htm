@@ -11,9 +11,11 @@
     }
   </style>
   <meta charset="utf-8"/>
-  <script type="application/javascript" src="Rippa.js"></script>
-  <script type="application/javascript">
-    function onOpenFile(event) {
+  <!--script type="module" src="Rippa.js"></script-->
+  <script type="module">
+    import {Rippa} from './Rippa.js'
+	
+	window.onOpenFile = function(event) {
         event.stopPropagation();
         event.preventDefault();
         
@@ -23,7 +25,7 @@
         openFile(fileList[0]);
     }
     
-    function drop(event) {
+    window.drop = function(event) {
         event.stopPropagation();
         event.preventDefault();
 
@@ -47,18 +49,18 @@
         render();
     }
    
-    function dragOver(event) {
+    window.dragOver = function(event) {
         event.stopPropagation();
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
     }
     
-    async function render() {  
+    function render() {  
         var canvas = document.getElementById('canvas');
 		
-		parentSize = canvas.parentNode.getBoundingClientRect();
+		var parentSize = canvas.parentNode.getBoundingClientRect();
 		canvas.width = parentSize.width;
-		canvas.height =parentSize.height;
+		canvas.height = parentSize.height;
 		
         var ctx = canvas.getContext('2d');
         
@@ -66,7 +68,7 @@
             //ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
             
             if (context.blob !== null) {
-                let promise = rippa.render(canvas);
+                let promise = rippa.render(context, canvas);
             }
         }
    }
@@ -105,7 +107,7 @@
         updatePlaneUI(context.planeAttr);
     }
     
-    function onViewChanged(event) {
+    window.onViewChanged = function(event) {
         if (event.target.id == "zoom") {
             context.viewAttr.zoom.h = parseInt(event.target.value) / 100;
             context.viewAttr.zoom.v = context.viewAttr.zoom.h;
@@ -116,7 +118,7 @@
         render();
     }
     
-    function onNavigationChanged(event) {
+    window.onNavigationChanged = function(event) {
         if (event.target.id == "offset") {
             context.navigation.offset = parseInt(event.target.value);
         }
@@ -124,7 +126,7 @@
         render();
     }
 
-    function onTileAttrChanged(event) {
+    window.onTileAttrChanged = function(event) {
         if (event.target.id == "tileWidth") {
             context.tileAttr.size.w = parseInt(event.target.value);
         } else if (event.target.id == "tileHeight") {
@@ -134,7 +136,7 @@
         render();
     }
     
-    function onPlaneAttrChanged(event) {
+    window.onPlaneAttrChanged = function(event) {
         if (event.target.id == "planeCount") {
             context.planeAttr.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
@@ -144,16 +146,16 @@
         render();
     }
     
-	function onResize() {
+	window.onResize = function() {
 		render();
 	}
 	
-    function onLoad() {
+    window.onLoad = function() {
         var dropZone = document.getElementById("canvas");
         dropZone.addEventListener("dragover", dragOver, false);
         dropZone.addEventListener("drop"    , drop    , false);
         
-        testData = new Uint8Array(
+        var testData = new Uint8Array(
         [
         // 8x8 8-bit
         0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 
@@ -230,7 +232,7 @@
 
         context.blob = new Blob([testData.buffer]);
         
-        var rgbArray = [];//['rgb(255, 255, 255)'];
+        /*var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;
         var bpp = 4;
         for (paletteIndex = 0; paletteIndex < (2**bpp); ++paletteIndex) {
@@ -239,14 +241,13 @@
             var g = intensity * ((paletteIndex & 0x04) >> 2);
             var b = intensity * (paletteIndex & 0x01);
             
-            rgb = `rgb(${r}, ${g}, ${b})`;
+            var rgb = `rgb(${r}, ${g}, ${b})`;
             
             rgbArray[paletteIndex] = rgb;
         }
         
         context.palette = new Palette(bpp, rgbArray);
-        
-        rippa.setContext(context);
+        */
         
         updateUI();        
         render();
