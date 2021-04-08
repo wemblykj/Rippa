@@ -75,7 +75,8 @@ var ViewAttributes = function(planeMask = 0xff) {
   this.spacing = new Axis(2, 2);
   this.planeMask = planeMask;
   this.zoom = new Axis(1, 1);
-  this.clear = true;
+  this.clearReq = true;
+  this.clear = false;
 }
 
 var Palette = function(bitsPerPixel, rgbArray) {
@@ -88,26 +89,35 @@ var Palette = function(bitsPerPixel, rgbArray) {
 }
 
 export function Rippa() {
-	this.tileSemaphore = new AsyncSemaphore(256);
+	this.renderSemaphore = new AsyncSemaphore(1);
+	//this.tileSemaphore = new AsyncSemaphore(64);
 	this.terminateRendering = false;
 	
+	this.invalidate = function(context) {
+		context.viewAttr.clearReq = true;
+	}
+
     this.render = async function(context, canvas) {
-		
 		this.terminateRendering = true;
-		await this.tileSemaphore.awaitTerminate();
-		this.terminateRendering = false;
+		await this.renderSemaphore.awaitTerminate();
 		
         if (canvas) {
             if(context) {
                 var ctx = canvas.getContext('2d');
+
+				context.viewAttr.clear = context.viewAttr.clearReq; 
+				context.viewAttr.clearReq = false; 
 
 				if (context.viewAttr.clear) {
 					ctx.clearRect(0, 0, canvas.width, canvas.height);
 				}
 				
 				var offset = context.navigation.offset;
-                return Promise.race(this.renderTileView(context, ctx, offset));    
-				//return this.renderTileView(context, ctx, offset);    
+                return this.renderSemaphore.withLockRunAndForget(async() => {
+					this.terminateRendering = false;
+					await this.renderTileView(context, ctx, offset);
+					context.viewAttr.clear = false;
+				});
             }
         }
     };
@@ -123,23 +133,29 @@ export function Rippa() {
         var plane = context.planeAttr;
         var view = context.viewAttr;
         
-        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
-        var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
         var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
-        var bw = 2 * view.margin.h + (maxColumns * tw);
-        var bh = 2 * view.margin.v + (maxRows * th);
         
-        ctx.fillStyle = 'rgb(80, 80, 80)';
-        ctx.fillRect(0,0, bw, bh);
+        if (context.viewAttr.clear) {
+			var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+        	var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
+
+            var bw = 2 * view.margin.h + (maxColumns * tw);
+            var bh = 2 * view.margin.v + (maxRows * th);
+        
+            ctx.fillStyle = 'rgb(80, 80, 80)';
+            ctx.fillRect(0,0, bw, bh);
+        }
         
         var cy = view.margin.v;
-        var eos = false;
         
 		let promises = [];
 		
         var row;
-        for (row = 0; !this.terminateRendering && row < maxRows; ++row) {		
+        for (row = 0; row < maxRows; ++row) {
+			if (this.terminateRendering)
+				break;
+
             var cx = view.margin.h;
         
 			promises += this.renderRow(context, ctx, offset, cx, cy);
@@ -148,7 +164,7 @@ export function Rippa() {
 			cy += th;
         }
 		
-		return Promise.race(promises);
+		return await Promise.all(promises);
     }
     
 	this.renderRow = async function(context, ctx, offset, cx, cy) {
@@ -161,13 +177,16 @@ export function Rippa() {
         //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
         var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
         //var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
-        var bw = 2 * view.margin.h + (maxColumns * tw);
+        //var bw = 2 * view.margin.h + (maxColumns * tw);
         //var bh = 2 * view.margin.v + (maxRows * th);
 		
 		let promises = [];
 		
 		var column;
-		for (column = 0; !this.terminateRendering && column < maxColumns; ++column) {
+		for (column = 0; column < maxColumns; ++column) {
+			if (this.terminateRendering)
+				break;
+
 			if (offset < blob.size) {
 				//promises += this.tileSemaphore.withLockRunAndForget(() => this.drawTile(context, ctx, offset, cx, cy));
 				promises += this.drawTile(context, ctx, offset, cx, cy);
@@ -179,7 +198,7 @@ export function Rippa() {
 			}
 		}
 		
-		return Promise.race(promises);
+		return await Promise.all(promises);
 	}
 	
     this.drawTile = async function(context, ctx, offset, cx, cy) {
@@ -192,20 +211,22 @@ export function Rippa() {
         
 		// draw a placeholder tile to show that this tile is being processed
 		ctx.fillStyle = 'rgb(0,0,0)';
-                                          
 		ctx.fillRect(cx, cy, tile.size.w * view.zoom.h, tile.size.h * view.zoom.v);
 	
 		var start = offset;// + (tile.stride * rowIndex) / plane.pixelsPerByte;
 		var end = start + (tile.size.w * tile.size.h) / plane.pixelsPerByte;
 						
 		var tileData = blob.slice(start, end);					
-		return tileData.arrayBuffer().then(buffer => {
+		return await tileData.arrayBuffer().then(buffer => {
 						
 			var lineData = new Uint8Array(buffer)
 								
 			// now draw the tile		
 			var rowIndex;
-			for (rowIndex = 0; !this.terminateRendering && rowIndex < tile.size.h; ++rowIndex) {
+			for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
+				if (this.terminateRendering)
+					break;
+
 				var y = cy + (rowIndex * view.zoom.v);
 			
 				var rowOfs = tile.size.w * rowIndex;
@@ -230,6 +251,9 @@ export function Rippa() {
 
 							var columnIndex;
 							for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
+								if (this.terminateRendering)
+									break;
+
 								// initalise our pixel [ABCD]
 								var pixel = 0;
 								
@@ -261,15 +285,18 @@ export function Rippa() {
 									// AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
 									var planeIndex;
 									for (planeIndex = 0; planeIndex < plane.planeCount; ++planeIndex) {
-									  var mask = 1 << planeIndex;
-									  
-									  if ((mask & view.planeMask) != 0) {
-										var ofs = rowOfs + Math.floor(columnIndex / plane.planeCount);
-									  
-										var tileByte = lineData[ofs];
-										var planeData = (tileByte &  mask);
-										pixel |= planeData;
-									  }
+										if (this.terminateRendering)
+											break;
+
+										var mask = 1 << planeIndex;
+										
+										if ((mask & view.planeMask) != 0) {
+											var ofs = rowOfs + Math.floor(columnIndex / plane.planeCount);
+										
+											var tileByte = lineData[ofs];
+											var planeData = (tileByte &  mask);
+											pixel |= planeData;
+										}
 									}
 								}
 

@@ -44,7 +44,8 @@
 
     function openFile(file) {
         context.blob = file;
-		context.viewAttr.clear = true;
+
+		rippa.invalidate(context);
 		
         render();
     }
@@ -90,7 +91,7 @@
         var tileHeight = document.getElementById("tileHeight");
         tileHeight.value = tileAttr.size.h;
 		
-		context.viewAttr.clear = true;
+		rippa.invalidate(context);
     }
     
     function updatePlaneUI(planeAttr) {
@@ -111,10 +112,9 @@
         if (event.target.id == "zoom") {
             context.viewAttr.zoom.h = parseInt(event.target.value) / 100;
             context.viewAttr.zoom.v = context.viewAttr.zoom.h;
-			
-			context.viewAttr.clear = true;
         }
         
+        rippa.invalidate(context);
         render();
     }
     
@@ -123,6 +123,7 @@
             context.navigation.offset = parseInt(event.target.value);
         }
         
+        rippa.invalidate(context);
         render();
     }
 
@@ -132,7 +133,8 @@
         } else if (event.target.id == "tileHeight") {
             context.tileAttr.size.h = parseInt(event.target.value);
         }
-        
+
+        rippa.invalidate(context);
         render();
     }
     
@@ -143,10 +145,12 @@
             context.planeAttr.packing = parseInt(event.target.value);
         }
         
+        rippa.invalidate(context);
         render();
     }
     
 	window.onResize = function() {
+        rippa.invalidate(context);
 		render();
 	}
 	
