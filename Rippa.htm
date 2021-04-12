@@ -59,9 +59,9 @@
     function render() {  
         var canvas = document.getElementById('canvas');
 		
-		var parentSize = canvas.parentNode.getBoundingClientRect();
-		canvas.width = parentSize.width;
-		canvas.height = parentSize.height;
+		var clientRect = canvas.getBoundingClientRect();
+		canvas.width = clientRect.width;
+		canvas.height = clientRect.height;
 		
         var ctx = canvas.getContext('2d');
         
@@ -99,6 +99,8 @@
         planeCount.value = planeAttr.planeCount;
         var planePacking = document.getElementById("planePacking");
         planePacking.value = planeAttr.packing;
+        var planeEndian = document.getElementById("planeEndian");
+        planeEndian.value = planeAttr.endian;
     }
     
     function updateUI() {
@@ -110,8 +112,10 @@
     
     window.onViewChanged = function(event) {
         if (event.target.id == "zoom") {
-            context.viewAttr.zoom.h = parseInt(event.target.value) / 100;
-            context.viewAttr.zoom.v = context.viewAttr.zoom.h;
+            var z = parseInt(event.target.value);
+            z = Math.max(50, z) / 100;
+            context.viewAttr.zoom.h = z;
+            context.viewAttr.zoom.v = z;
         }
         
         rippa.invalidate(context);
@@ -120,7 +124,9 @@
     
     window.onNavigationChanged = function(event) {
         if (event.target.id == "offset") {
-            context.navigation.offset = parseInt(event.target.value);
+            var offset = parseInt(event.target.value);
+            offset = Math.max(0, offset);
+            context.navigation.offset = offset;
         }
         
         rippa.invalidate(context);
@@ -143,6 +149,8 @@
             context.planeAttr.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
             context.planeAttr.packing = parseInt(event.target.value);
+        } else if (event.target.id == "planeEndian") {
+            context.planeAttr.endian = parseInt(event.target.value);
         }
         
         rippa.invalidate(context);
@@ -263,47 +271,56 @@
   </script>
  </head>
  <body onload="onLoad()" onresize="onResize()">
-  <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
-  <div>
-    <canvas id="canvas"></canvas>
-  </div>
-  <div>
-    <span>
-        <label for="zoom">Zoom</label>
-        <input id="zoom" type="number" onchange="onViewChanged(event)"/>
-    </span>
-  </div>
-  <div>
-    <span>
-        <label for="offset">Offset</label>
-        <input id="offset" type="number" onchange="onNavigationChanged(event)"/>
-    </span>
-  </div>
-  <div>
-    <span>
-        <label for="tileWidth">Tile width</label>
-        <input id="tileWidth" type="number" onchange="onTileAttrChanged(event)"/>
-        <label for="tileHeight">Tile height</label>
-        <input id="tileHeight" type="number" onchange="onTileAttrChanged(event)"/>
-    </span>
-  </div>
-  <div>
-    <span>
-        <label for="planeCount">Plane count</label>
-        <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event)">
-            <option value="1">1-bit</option>
-            <option value="2">2-bit</option>
-            <option value="4">4-bit</option>
-            <option value="8">8-bit</option>
-        </select>
-        <label for="planePacking">Plane packing</label>
-        <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event)"/>
-            <option value="0">Interleaved</option>
-            <option value="1">Byte</option>
-            <option value="2">Line</option>
-            <option value="3">Tile</option>
-        </select>
-    </span>
-  </div>
+    <table style="height: 100%;">
+        <tr>
+            <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
+        </tr>
+        <tr style="height: 100%;">
+            <canvas id="canvas" style="height: 100%;"></canvas>
+        </tr>
+        <tr>
+            <span>
+                <label for="zoom">Zoom</label>
+                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event)"/>
+            </span>
+        </tr>
+        <tr>
+            <span>
+                <label for="offset">Offset</label>
+                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event)"/>
+            </span>
+        </tr>
+        <tr>
+            <span>
+                <label for="tileWidth">Tile width</label>
+                <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event)"/>
+                <label for="tileHeight">Tile height</label>
+                <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event)"/>
+            </span>
+        </tr>
+        <tr>
+            <span>
+                <label for="planeCount">Plane count</label>
+                <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event)">
+                    <option value="1">1-bit</option>
+                    <option value="2">2-bit</option>
+                    <option value="4">4-bit</option>
+                    <option value="8">8-bit</option>
+                </select>
+                <label for="planePacking">Plane packing</label>
+                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event)"/>
+                    <option value="0">Interleaved</option>
+                    <option value="1">Byte</option>
+                    <option value="2">Line</option>
+                    <option value="3">Tile</option>
+                </select>
+                <label for="planeEndian">Plane endianess</label>
+                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event)"/>
+                    <option value="0">Little</option>
+                    <option value="1">Big</option>
+                </select>
+            </span>
+        </tr>
+    </table>
  </body>
 </html>
