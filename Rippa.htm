@@ -43,9 +43,10 @@
     }
 
     function openFile(file) {
-        context.blob = file;
+        var renderContext = window.renderContext;
+        renderContext.blob = file;
 
-		rippa.invalidate(context);
+		renderContext.invalidate();
 		
         render();
     }
@@ -68,8 +69,10 @@
         if (ctx) {
             //ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
             
-            if (context.blob !== null) {
-                let promise = rippa.render(context, canvas);
+            var renderContext = window.renderContext;
+
+            if (renderContext.blob !== null) {
+                let promise = window.rippa.render(renderContext, canvas);
             }
         }
    }
@@ -79,7 +82,7 @@
         zoomCtl.value = Math.floor(view.zoom.h * 100);
    }
    
-   function updateNavigationUI(nav) {
+   function updateTileNavigationUI(nav) {
         var offset = document.getElementById("offset");
         offset.value = nav.offset;
    }
@@ -91,10 +94,10 @@
         var tileHeight = document.getElementById("tileHeight");
         tileHeight.value = tileAttr.size.h;
 		
-		rippa.invalidate(context);
+		window.renderContext.invalidate();
     }
     
-    function updatePlaneUI(planeAttr) {
+    function updatePackingUI(planeAttr) {
         var planeCount = document.getElementById("planeCount");
         planeCount.value = planeAttr.planeCount;
         var planePacking = document.getElementById("planePacking");
@@ -104,21 +107,25 @@
     }
     
     function updateUI() {
-        updateViewUI(context.viewAttr);
-        updateNavigationUI(context.navigation);
-        updateTileUI(context.tileAttr);
-        updatePlaneUI(context.planeAttr);
+        var renderContext = window.renderContext;
+
+        updateViewUI(renderContext.attributes.view);
+        updateTileNavigationUI(renderContext.attributes.tileNav);
+        updateTileUI(renderContext.attributes.tile);
+        updatePackingUI(renderContext.attributes.packing);
     }
     
     window.onViewChanged = function(event) {
+        var renderContext = window.renderContext;
+
         if (event.target.id == "zoom") {
             var z = parseInt(event.target.value);
             z = Math.max(50, z) / 100;
-            context.viewAttr.zoom.h = z;
-            context.viewAttr.zoom.v = z;
+            renderContext.attributes.view.zoom.h = z;
+            renderContext.attributes.view.zoom.v = z;
         }
         
-        rippa.invalidate(context);
+        renderContext.invalidate();
         render();
     }
     
@@ -126,39 +133,43 @@
         if (event.target.id == "offset") {
             var offset = parseInt(event.target.value);
             offset = Math.max(0, offset);
-            context.navigation.offset = offset;
+            renderContext.attributes.tileNav.offset = offset;
         }
         
-        rippa.invalidate(context);
+        renderContext.invalidate();
         render();
     }
 
     window.onTileAttrChanged = function(event) {
+        var renderContext = window.renderContext;
+        
         if (event.target.id == "tileWidth") {
-            context.tileAttr.size.w = parseInt(event.target.value);
+            renderContext.attributes.tile.size.w = parseInt(event.target.value);
         } else if (event.target.id == "tileHeight") {
-            context.tileAttr.size.h = parseInt(event.target.value);
+            renderContext.attributes.tile.size.h = parseInt(event.target.value);
         }
 
-        rippa.invalidate(context);
+        renderContext.invalidate();
         render();
     }
     
     window.onPlaneAttrChanged = function(event) {
+        var renderContext = window.renderContext;
+
         if (event.target.id == "planeCount") {
-            context.planeAttr.setPlaneCount(parseInt(event.target.value));
+            renderContext.attributes.packing.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
-            context.planeAttr.packing = parseInt(event.target.value);
+            renderContext.attributes.packing.packing = parseInt(event.target.value);
         } else if (event.target.id == "planeEndian") {
-            context.planeAttr.endian = parseInt(event.target.value);
+            renderContext.attributes.packing.endian = parseInt(event.target.value);
         }
         
-        rippa.invalidate(context);
+        renderContext.invalidate();
         render();
     }
     
 	window.onResize = function() {
-        rippa.invalidate(context);
+        window.renderContext.invalidate();
 		render();
 	}
 	
@@ -167,6 +178,13 @@
         dropZone.addEventListener("dragover", dragOver, false);
         dropZone.addEventListener("drop"    , drop    , false);
         
+        var rippa = new Rippa();
+        var attributes = rippa.createAttributesFromPreset("MSX2Screen");
+        var renderContext = rippa.createRenderContext(attributes);
+
+        window.rippa = rippa;
+        window.renderContext = renderContext;
+
         var testData = new Uint8Array(
         [
         // 8x8 8-bit
@@ -242,7 +260,7 @@
         0x81,
         0x7e]);
 
-        context.blob = new Blob([testData.buffer]);
+        window.renderContext.blob = new Blob([testData.buffer]);
         
         /*var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;
@@ -264,9 +282,6 @@
         updateUI();        
         render();
     }
-    
-    var rippa = new Rippa();
-    var context = rippa.createContext();
     
   </script>
  </head>
