@@ -58,11 +58,7 @@
     }
     
     function render() {  
-        var canvas = document.getElementById('canvas');
-		
-		var clientRect = canvas.getBoundingClientRect();
-		canvas.width = clientRect.width;
-		canvas.height = clientRect.height;
+        
 		
         var ctx = canvas.getContext('2d');
         
@@ -72,7 +68,7 @@
             var renderContext = window.renderContext;
 
             if (renderContext.blob !== null) {
-                let promise = window.rippa.render(renderContext, canvas);
+                window.rippa.render(renderContext, canvas);
             }
         }
    }
@@ -136,7 +132,7 @@
             renderContext.attributes.tileNav.offset = offset;
         }
         
-        renderContext.invalidate();
+        //renderContext.invalidate();
         render();
     }
 
@@ -169,6 +165,12 @@
     }
     
 	window.onResize = function() {
+        var canvas = document.getElementById('canvas');
+		
+		var clientRect = canvas.getBoundingClientRect();
+		canvas.width = clientRect.width;
+		canvas.height = clientRect.height;
+
         window.renderContext.invalidate();
 		render();
 	}
@@ -279,7 +281,10 @@
         context.palette = new Palette(bpp, rgbArray);
         */
         
-        updateUI();        
+        updateUI();
+        
+        window.onResize();
+
         render();
     }
     
@@ -296,41 +301,41 @@
         <tr>
             <span>
                 <label for="zoom">Zoom</label>
-                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event)"/>
+                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
             </span>
         </tr>
         <tr>
             <span>
                 <label for="offset">Offset</label>
-                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event)"/>
+                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
             </span>
         </tr>
         <tr>
             <span>
                 <label for="tileWidth">Tile width</label>
-                <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event)"/>
+                <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
                 <label for="tileHeight">Tile height</label>
-                <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event)"/>
+                <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
             </span>
         </tr>
         <tr>
             <span>
                 <label for="planeCount">Plane count</label>
-                <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event)">
+                <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event); return false;">
                     <option value="1">1-bit</option>
                     <option value="2">2-bit</option>
                     <option value="4">4-bit</option>
                     <option value="8">8-bit</option>
                 </select>
                 <label for="planePacking">Plane packing</label>
-                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event)"/>
+                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event); return false;"/>
                     <option value="0">Interleaved</option>
                     <option value="1">Byte</option>
                     <option value="2">Line</option>
                     <option value="3">Tile</option>
                 </select>
                 <label for="planeEndian">Plane endianess</label>
-                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event)"/>
+                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event); return false;"/>
                     <option value="0">Little</option>
                     <option value="1">Big</option>
                 </select>

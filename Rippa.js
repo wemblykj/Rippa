@@ -193,6 +193,7 @@ var RenderContext = function(attributes) {
 	this.blob = null;
 	this.attributes = attributes;
 	this.terminateRendering = false;
+	this.maxConcurrentTiles = 4;
 	this.invalidate = async function() {
 		this.clearReq = true;
 	}
@@ -202,6 +203,11 @@ var RenderContext = function(attributes) {
 		this.renderingPromise = new Promise(resolve => { this.resolveRenderFn = resolve });
 		this.terminateRendering = false;
 
+		// just ensure tile semephore is reset
+		this.tilePromise = null;
+		this.tileCount = 0;
+
+		// cache the clear status from the request
 		this.clear = this.clearReq;
 		this.clearReq = false;
 	}
@@ -209,16 +215,17 @@ var RenderContext = function(attributes) {
 		this.resolveRenderFn();
 	}
 	this.beginTile = async function() {
-		if (this.tileCount > this.maxTiles) {
-			await this.tilePromise();
+		if (this.tileCount > this.maxConcurrentTiles) {
+			if (this.tilePromise !== null)
+				await this.tilePromise;
 		}
 		
-		if (++this.tileCount > this.maxTiles) {
+		if (++this.tileCount > this.maxConcurrentTiles) {
 			this.tilePromise = new Promise(resolve => { this.tileResolveFn = resolve });
 		}
 	}
 	this.endTile = async function() {
-		if (--this.tileCount == this.maxTiles) {
+		if (--this.tileCount == this.maxConcurrentTiles) {
 			this.tileResolveFn();
 		}
 	}
@@ -273,11 +280,10 @@ export function Rippa() {
         
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
         var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
-        
-        if (renderContext.clear) {
-			var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
-        	var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
+        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+			var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);	
 
+        if (renderContext.clear) {
             var bw = 2 * view.margin.h + (maxColumns * tw);
             var bh = 2 * view.margin.v + (maxRows * th);
         
@@ -323,10 +329,8 @@ export function Rippa() {
 				break;
 
 			if (offset < blob.size) {
-				
-				//await renderContext.beginTile();
-				await this.drawTile(renderContext, ctx, offset, cx, cy);
-				//renderContext.endTile();
+				await renderContext.beginTile();
+				this.drawTile(renderContext, ctx, offset, cx, cy).then(() => renderContext.endTile() );
 				
 				offset += (tile.size.w * tile.size.h) / packing.pixelsPerByte;
 				cx += tw;
@@ -345,10 +349,6 @@ export function Rippa() {
         var view = attr.view;
         var packing = attr.packing;
         
-		// draw a placeholder tile to show that this tile is being processed
-		ctx.fillStyle = 'rgb(0,0,0)';
-		ctx.fillRect(cx, cy, tile.size.w * view.zoom.h, tile.size.h * view.zoom.v);
-	
 		var start = offset;// + (tile.stride * rowIndex) / packing.pixelsPerByte;
 		var end = start + (tile.size.w * tile.size.h) / packing.pixelsPerByte;
 			
