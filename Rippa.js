@@ -88,6 +88,37 @@ var Palette = function(bitsPerPixel, rgbArray) {
   };
 }
 
+var ByteStream = function(stream, fifoSize) {
+	this.stream = stream;
+	this.reader = stream.getReader();
+	this.fifoSize = fifoSize;
+	this.threashold = fifoSize / 2;
+	this.count = 0;
+	this.buffer = new UInt8Buffer(fifoSize)
+	this.head = 0;
+	this.tail = 0;
+	
+	this.getByte = function() {
+		if (this.count > 0) {
+			var byte = buffer[this.tail];
+			this.tail = (this.tail + 1) % this.fifoSize;
+			--this.count;
+
+			if (this.count < this.threashold)
+			return byte;
+		}
+			
+		
+
+		if (this.fifoEmpty)
+			throw new Error("End of stream");
+		readBufferPromise = reader.read().then();
+
+		this.getByte = function()
+	};
+	
+}
+
 export function Rippa() {
 	this.renderSemaphore = new AsyncSemaphore(1);	///< ensure we are not rendering more than one screen at a time
 	this.tileSemaphore = new AsyncSemaphore(8);		///< limit the number of tiles drawn concurrently
