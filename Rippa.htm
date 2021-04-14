@@ -67,7 +67,7 @@
         window.paletteView.render(tileContext, paletteCanvas);
    }
     
-   function updateViewUI(view) {
+   function updateTileViewUI(view) {
         var zoomCtl = document.getElementById("zoom");
         zoomCtl.value = Math.floor(view.zoom.h * 100);
    }
@@ -99,8 +99,8 @@
     function updateUI() {
         var tileContext = window.tileContext;
 
-        updateViewUI(tileContext.attributes.view);
-        updateTileNavigationUI(tileContext.attributes.tileNav);
+        updateTileViewUI(tileContext.view);
+        updateTileNavigationUI(tileContext.nav);
         updateTileUI(tileContext.attributes.tile);
         updatePackingUI(tileContext.attributes.packing);
     }

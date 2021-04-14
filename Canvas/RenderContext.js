@@ -15,7 +15,7 @@ export var RenderContext = function(attributes) {
 		this.isRendering = true;
 
 		// cache the invalidate status
-		this.clear = this._invalidateReq = true;
+		this.invalidate = this._invalidateReq = true;
 		this._invalidateReq = false;
 
 		await this.onBeginRender();

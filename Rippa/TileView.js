@@ -1,8 +1,18 @@
+import * as Common from "../Rippa/Common.js"
 import {RenderContext} from "../Canvas/RenderContext.js"
 
+var ViewAttributes = function(planeMask = 0xff) {
+    this.margin = new Common.Axis(2, 2);
+    this.spacing = new Common.Axis(2, 2);
+    this.planeMask = planeMask;
+    this.zoom = new Common.Axis(1, 1);
+}
+  
 var Context = function(attributes) {
 	this.blob = null;
 	this.attributes = attributes;
+    this.view = new ViewAttributes();
+    this.nav = new Common.Navigation();
 	this.maxConcurrentTiles = 4;
 	this.onBeginRender = async function() {
 		// just ensure tile semephore is reset
@@ -63,9 +73,9 @@ export var TileView = function() {
 		if (context && canvas) {
 			await context.beginRender();
 			
-			var offset = context.attributes.tileNav.offset;
+			var offset = context.nav.offset;
 			
-			if (context.clear) {
+			if (context.invalidate) {
 				var ctx = canvas.getContext('2d');
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
@@ -77,17 +87,17 @@ export var TileView = function() {
     }
     
     this.renderTiles = async function(context, canvas, offset) {
+        var view = context.view;
 		var attr = context.attributes;
         var tile = attr.tile;
         var packing = attr.packing;
-        var view = attr.view;
         
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
         var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
 		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
-        if (context.clear) {
+        if (context.invalidate) {
 			var ctx = canvas.getContext('2d');
 
             var bw = 2 * view.margin.h + (maxColumns * tw);
@@ -115,10 +125,10 @@ export var TileView = function() {
     
 	this.renderRow = async function(context, canvas, cx, cy, offset) {
         var blob = context.blob;
+		var view = context.view;
 		var attr = context.attributes;
         var tile = attr.tile;
         var packing = attr.packing;
-        var view = attr.view;
         
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
         //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
@@ -148,11 +158,11 @@ export var TileView = function() {
 	
     this.drawTile = async function(context, canvas, offset, cx, cy) {
 		var blob = context.blob;
+		var view = context.view;
 		var attr = context.attributes;
         var tile = attr.tile;
 		var tilePalette = attr.tilePalette;
         var systemPalette = attr.systemPalette;
-        var view = attr.view;
         var packing = attr.packing;
         
 		var start = offset;// + (tile.stride * rowIndex) / packing.pixelsPerByte;

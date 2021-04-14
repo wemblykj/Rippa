@@ -1,8 +1,17 @@
+import * as Common from "../Rippa/Common.js"
 import {RenderContext} from "../Canvas/RenderContext.js"
+
+var ViewAttributes = function() {
+    this.margin = new Common.Axis(2, 2);
+    this.spacing = new Common.Axis(2, 2);
+    this.zoom = new Common.Axis(1, 1);
+}
 
 var PaletteContext = function(attributes) {
 	this.blob = null;
 	this.attributes = attributes;
+	this.view = new ViewAttributes();
+	this.nav = new Common.Navigation();
 	this.onBeginRender = async function() {
 	}
 }
@@ -18,7 +27,7 @@ export var PaletteView = function() {
 		if (context && canvas) {
 			await context.beginRender();
 			
-			if (context.clear) {
+			if (context.invalidate) {
 				var ctx = canvas.getContext('2d');
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
@@ -29,17 +38,16 @@ export var PaletteView = function() {
 		}
 	}
 	this.renderTiles = async function(context, canvas, offset) {
+		var view = context.view;
 		var attr = context.attributes;
         var packing = attr.packing;
-        var view = attr.view;
-        
 
         var th = (8 * view.zoom.v) + view.spacing.v;
         var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
         var tw = (8 * view.zoom.h) + view.spacing.h;
 		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
-        if (context.clear) {
+        if (context.invalidate) {
 			var ctx = canvas.getContext('2d');
 
             var bw = 2 * view.margin.h + (maxColumns * tw);
