@@ -1,0 +1,40 @@
+canvas {
+    border-width: 1px;
+    border-style: solid;
+    border-color: Black;
+    width: 100%;
+    height: 100%;
+}
+
+.greedy{
+    width: auto;
+    height: auto;
+}
+
+.container{
+    /* float: left; */
+    display: block;
+    width: 30%;
+  
+  }
+
+.Pane {
+    margin: 1em;
+    display: table;
+}
+
+.HeaderPane {
+}
+
+.TilePane {
+    float: left;
+}
+
+.PalettePane {
+    float: right;
+
+}
+
+.Controls {
+    position:relative;
+}

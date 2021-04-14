@@ -1,16 +1,8 @@
 <!DOCTYPE html>
 <html>
  <head>
- <style>
-    #canvas {
-      border-width: 1px;
-      border-style: solid;
-      border-color: Black;
-	  width: 100%;
-	  height: 100%;
-    }
-  </style>
   <meta charset="utf-8"/>
+  <link rel="stylesheet" type="text/css" href="Rippa.css">
   <!--script type="module" src="Rippa.js"></script-->
   <script type="module">
     import {Rippa} from './Rippa.js'
@@ -43,10 +35,10 @@
     }
 
     function openFile(file) {
-        var renderContext = window.renderContext;
-        renderContext.blob = file;
+        var tileContext = window.tileContext;
+        tileContext.blob = file;
 
-		renderContext.invalidate();
+		tileContext.invalidate();
 		
         render();
     }
@@ -57,20 +49,21 @@
         event.dataTransfer.dropEffect = 'copy';
     }
     
-    function render() {  
-        
-		
-        var ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-            //ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
-            
-            var renderContext = window.renderContext;
-
-            if (renderContext.blob !== null) {
-                window.rippa.render(renderContext, canvas);
-            }
+    function render() { 
+        /*var paletteCanvas = document.getElementById('paletteCanvas');
+		var paletteContext = window.paletteContext;
+        if (paletteContext.blob !== null) {
+            window.rippa.render(paletteContext, paletteCanvas);
+        } */
+        var tileCanvas = document.getElementById('tileCanvas');
+		var tileContext = window.tileContext;
+        if (tileContext.blob !== null) {
+            window.tileView.render(tileContext, tileCanvas);
         }
+
+        var paletteCanvas = document.getElementById('paletteCanvas');
+		var paletteContext = window.paletteContext;
+        window.paletteView.render(tileContext, paletteCanvas);
    }
     
    function updateViewUI(view) {
@@ -90,7 +83,7 @@
         var tileHeight = document.getElementById("tileHeight");
         tileHeight.value = tileAttr.size.h;
 		
-		window.renderContext.invalidate();
+		window.tileContext.invalidate();
     }
     
     function updatePackingUI(planeAttr) {
@@ -103,25 +96,25 @@
     }
     
     function updateUI() {
-        var renderContext = window.renderContext;
+        var tileContext = window.tileContext;
 
-        updateViewUI(renderContext.attributes.view);
-        updateTileNavigationUI(renderContext.attributes.tileNav);
-        updateTileUI(renderContext.attributes.tile);
-        updatePackingUI(renderContext.attributes.packing);
+        updateViewUI(tileContext.attributes.view);
+        updateTileNavigationUI(tileContext.attributes.tileNav);
+        updateTileUI(tileContext.attributes.tile);
+        updatePackingUI(tileContext.attributes.packing);
     }
     
     window.onViewChanged = function(event) {
-        var renderContext = window.renderContext;
+        var tileContext = window.tileContext;
 
         if (event.target.id == "zoom") {
             var z = parseInt(event.target.value);
             z = Math.max(50, z) / 100;
-            renderContext.attributes.view.zoom.h = z;
-            renderContext.attributes.view.zoom.v = z;
+            tileContext.attributes.view.zoom.h = z;
+            tileContext.attributes.view.zoom.v = z;
         }
         
-        renderContext.invalidate();
+        tileContext.invalidate();
         render();
     }
     
@@ -129,63 +122,66 @@
         if (event.target.id == "offset") {
             var offset = parseInt(event.target.value);
             offset = Math.max(0, offset);
-            renderContext.attributes.tileNav.offset = offset;
+            tileContext.attributes.tileNav.offset = offset;
         }
         
-        //renderContext.invalidate();
+        //tileContext.invalidate();
         render();
     }
 
     window.onTileAttrChanged = function(event) {
-        var renderContext = window.renderContext;
+        var tileContext = window.tileContext;
         
         if (event.target.id == "tileWidth") {
-            renderContext.attributes.tile.size.w = parseInt(event.target.value);
+            tileContext.attributes.tile.size.w = parseInt(event.target.value);
         } else if (event.target.id == "tileHeight") {
-            renderContext.attributes.tile.size.h = parseInt(event.target.value);
+            tileContext.attributes.tile.size.h = parseInt(event.target.value);
         }
 
-        renderContext.invalidate();
+        tileContext.invalidate();
         render();
     }
     
     window.onPlaneAttrChanged = function(event) {
-        var renderContext = window.renderContext;
+        var tileContext = window.tileContext;
 
         if (event.target.id == "planeCount") {
-            renderContext.attributes.packing.setPlaneCount(parseInt(event.target.value));
+            tileContext.attributes.packing.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
-            renderContext.attributes.packing.packing = parseInt(event.target.value);
+            tileContext.attributes.packing.packing = parseInt(event.target.value);
         } else if (event.target.id == "planeEndian") {
-            renderContext.attributes.packing.endian = parseInt(event.target.value);
+            tileContext.attributes.packing.endian = parseInt(event.target.value);
         }
         
-        renderContext.invalidate();
+        tileContext.invalidate();
         render();
     }
     
 	window.onResize = function() {
-        var canvas = document.getElementById('canvas');
+        var tileCanvas = document.getElementById('tileCanvas');
 		
-		var clientRect = canvas.getBoundingClientRect();
-		canvas.width = clientRect.width;
-		canvas.height = clientRect.height;
+		var clientRect = tileCanvas.getBoundingClientRect();
+		tileCanvas.width = clientRect.width;
+		tileCanvas.height = clientRect.height;
 
-        window.renderContext.invalidate();
+        window.tileContext.invalidate();
 		render();
 	}
 	
     window.onLoad = function() {
-        var dropZone = document.getElementById("canvas");
+        var dropZone = document.getElementById("tileCanvas");
         dropZone.addEventListener("dragover", dragOver, false);
         dropZone.addEventListener("drop"    , drop    , false);
         
         var rippa = new Rippa();
         var attributes = rippa.createAttributesFromPreset("MSX2Screen");
-        var renderContext = rippa.createRenderContext(attributes);
-
+       
         window.rippa = rippa;
-        window.renderContext = renderContext;
+        window.tileView = rippa.createTileView();
+        window.tileContext = window.tileView.createContext(attributes);
+        
+        window.paletteView = rippa.createPaletteView();
+        window.paletteContext = window.paletteView.createContext(attributes);
 
         var testData = new Uint8Array(
         [
@@ -262,7 +258,7 @@
         0x81,
         0x7e]);
 
-        window.renderContext.blob = new Blob([testData.buffer]);
+        window.tileContext.blob = new Blob([testData.buffer]);
         
         /*var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;
@@ -291,34 +287,28 @@
   </script>
  </head>
  <body onload="onLoad()" onresize="onResize()">
-    <table style="height: 100%;">
-        <tr>
-            <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
-        </tr>
-        <tr style="height: 100%;">
-            <canvas id="canvas" style="height: 100%;"></canvas>
-        </tr>
-        <tr>
+    <div class="container" id="HeaderPane">
+        <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
+    </div>
+    <div class="container" id="TilePane">
+        <div class="greedy" id="TileView">
+            <canvas class="greedy" id="tileCanvas"></canvas>
+        </div>
+        <div id="TileControls">
             <span>
                 <label for="zoom">Zoom</label>
                 <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
             </span>
-        </tr>
-        <tr>
             <span>
                 <label for="offset">Offset</label>
                 <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
             </span>
-        </tr>
-        <tr>
             <span>
                 <label for="tileWidth">Tile width</label>
                 <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
                 <label for="tileHeight">Tile height</label>
                 <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
             </span>
-        </tr>
-        <tr>
             <span>
                 <label for="planeCount">Plane count</label>
                 <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event); return false;">
@@ -340,7 +330,22 @@
                     <option value="1">Big</option>
                 </select>
             </span>
-        </tr>
-    </table>
+        </div>
+    </div>
+    <div class="container" id="PalettePane">
+        <div class="greedy" id="PaletteView">
+            <canvas id="paletteCanvas" ></canvas>
+        </div>
+        <div id="PaletteControls">
+            <span>
+                <label for="zoom">Zoom</label>
+                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
+            </span>
+            <span>
+                <label for="offset">Offset</label>
+                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
+            </span>
+        </div>
+    </div>
  </body>
 </html>

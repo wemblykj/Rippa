@@ -82,6 +82,16 @@ var SystemPalette = function(bitsPerPixel, rgbArray) {
   };
 }
 
+/*var Queue = function(fifoSize) {
+	this._head = 0;
+	this._tail = 0;
+	this.buffer = new UInt8Buffer(fifoSize);
+	this.enqueue = function(data) {
+		this.buffer[this._tail]
+		while(this._tail)
+	}
+}
+
 var ByteStream = function(stream, fifoSize) {
 	this.stream = stream;
 	this.reader = stream.getReader();
@@ -89,8 +99,8 @@ var ByteStream = function(stream, fifoSize) {
 	this.threashold = fifoSize / 2;
 	this.count = 0;
 	this.buffer = new UInt8Buffer(fifoSize)
-	this.head = 0;
-	this.tail = 0;
+	
+	this.eos = false;
 	
 	this.getByte = function() {
 		if (this.count > 0) {
@@ -99,6 +109,7 @@ var ByteStream = function(stream, fifoSize) {
 			--this.count;
 
 			if (this.count < this.threashold)
+				!(result = await reader.read())
 			return byte;
 		}
 			
@@ -111,7 +122,7 @@ var ByteStream = function(stream, fifoSize) {
 		}
 	};
 	
-}
+}*/
 
 var Attributes = function(w, h, tile_bpp, system_bpp, tilePalette = null, systemPalette = null) {
 	this.tileNav = new Navigation();
@@ -221,10 +232,50 @@ var Presets = function() {
 }
 
 var RenderContext = function(attributes) {
+	this.terminateRendering = false;
+	this._invalidateReq = true;
+	this.invalidate = async function() {
+		this._invalidateReq = true;
+	}
+	this.beginRender = async function() {
+		if (this.isRendering) {
+			this.terminateRendering = true;
+			await this.renderingPromise;
+			this.renderingPromise = new Promise(resolve => { this.resolveRenderFn = resolve });
+		}
+		
+		this.terminateRendering = false;
+		this.isRendering = true;
+
+		// cache the invalidate status
+		this.clear = this._invalidateReq = true;
+		this._invalidateReq = false;
+
+		await this.onBeginRender();
+	}
+	this.endRender = async function() {
+		this.isRendering = false;
+		await this.onEndRender();
+		this.resolveRenderFn();
+	}
+	this.cancelRender = async function() {
+		this.terminateRendering = true;
+	}
+	this.onBeginRender = async function() {}
+	this.onEndRender = async function() {}
+}
+
+var TileContext = function(attributes) {
 	this.blob = null;
 	this.attributes = attributes;
-	this.terminateRendering = false;
 	this.maxConcurrentTiles = 4;
+	this.onBeginRender = async function() {
+		// just ensure tile semephore is reset
+		this.tilePromise = null;
+		this.tileCount = 0;
+	}
+	/*this.terminateRendering = false;
+	
 	this.invalidate = async function() {
 		this.clearReq = true;
 	}
@@ -244,7 +295,7 @@ var RenderContext = function(attributes) {
 	}
 	this.endRender = async function() {
 		this.resolveRenderFn();
-	}
+	}*/
 	this.beginTile = async function() {
 		if (this.tileCount > this.maxConcurrentTiles) {
 			if (this.tilePromise !== null)
@@ -266,55 +317,53 @@ var RenderContext = function(attributes) {
 	//this._tileSemaphore = new AsyncSemaphore(8);		///< limit the number of tiles drawn concurrently
 	
 }
+TileContext.prototype = new RenderContext();
+TileContext.construct = TileContext;
 
-export function Rippa() {
-	
-	this.createAttributesFromPreset = function(presetName) {
-		if(presetName == "MSX2Screen") {
-			var preset = new MSX2ScreenPreset();
-			return preset.attributes;
-		}
+var PaletteContext = function(attributes) {
+	this.blob = null;
+	this.attributes = attributes;
+	this.onBeginRender = async function() {
 	}
+}
+PaletteContext.prototype = new RenderContext();
+PaletteContext.construct = PaletteContext;
 
-    this.createRenderContext = function(attributes) {
-        var renderContext = new RenderContext(attributes);
-        
-        return renderContext;
+var TileView = function() {
+	this.createContext = function(attributes) {
+        return new TileContext(attributes);
+    }
+    this.render = async function(context, canvas) {	
+		if (context && canvas) {
+			await context.beginRender();
+			
+			var offset = context.attributes.tileNav.offset;
+			
+			if (context.clear) {
+				var ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			await this.renderTiles(context, canvas, offset);
+			
+			context.endRender();
+		}
     }
     
-	this.render = async function(renderContext, canvas) {
-		
-        if (canvas) {
-            if(renderContext) {
-                var ctx = canvas.getContext('2d');
-				
-				await renderContext.beginRender();
-				
-				var offset = renderContext.attributes.tileNav.offset;
-				
-				if (renderContext.clear) {
-					ctx.clearRect(0, 0, canvas.width, canvas.height);
-				}
-
-				await this.renderTileView(renderContext, ctx, offset);
-				
-				renderContext.endRender();
-            }
-        }
-    };
-    
-    this.renderTileView = async function(renderContext, ctx, offset) {
-		var attr = renderContext.attributes;
+    this.renderTiles = async function(context, canvas, offset) {
+		var attr = context.attributes;
         var tile = attr.tile;
         var packing = attr.packing;
         var view = attr.view;
         
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
-        var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
+        var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
-			var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);	
+		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
-        if (renderContext.clear) {
+        if (context.clear) {
+			var ctx = canvas.getContext('2d');
+
             var bw = 2 * view.margin.h + (maxColumns * tw);
             var bh = 2 * view.margin.v + (maxRows * th);
         
@@ -326,28 +375,28 @@ export function Rippa() {
         
 		var row;
 		for (row = 0; row < maxRows; ++row) {
-			if (renderContext.terminateRendering)
+			if (context.terminateRendering)
 				break;
 
             var cx = view.margin.h;
         
-			await this.renderRow(renderContext, ctx, cx, cy, offset);
+			await this.renderRow(context, canvas, cx, cy, offset);
 			
 			offset += (tile.size.w * maxColumns * tile.size.h) / packing.pixelsPerByte;
 			cy += th;
         }
     }
     
-	this.renderRow = async function(renderContext, ctx, cx, cy, offset) {
-        var blob = renderContext.blob;
-		var attr = renderContext.attributes;
+	this.renderRow = async function(context, canvas, cx, cy, offset) {
+        var blob = context.blob;
+		var attr = context.attributes;
         var tile = attr.tile;
         var packing = attr.packing;
         var view = attr.view;
         
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
         //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
-        var maxColumns = Math.floor((canvas.width - (2 * view.margin.h)) / tw);
+        var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));
         //var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
         //var bw = 2 * view.margin.h + (maxColumns * tw);
         //var bh = 2 * view.margin.v + (maxRows * th);
@@ -356,12 +405,12 @@ export function Rippa() {
 		
 		var column;
 		for (column = 0; column < maxColumns; ++column) {
-			if (renderContext.terminateRendering)
+			if (context.terminateRendering)
 				break;
 
 			if (offset < blob.size) {
-				await renderContext.beginTile();
-				this.drawTile(renderContext, ctx, offset, cx, cy).then(() => renderContext.endTile() );
+				await context.beginTile();
+				this.drawTile(context, canvas, offset, cx, cy).then(() => context.endTile() );
 				
 				offset += (tile.size.w * tile.size.h) / packing.pixelsPerByte;
 				cx += tw;
@@ -371,7 +420,7 @@ export function Rippa() {
 		}
 	}
 	
-    this.drawTile = async function(context, ctx, offset, cx, cy) {
+    this.drawTile = async function(context, canvas, offset, cx, cy) {
 		var blob = context.blob;
 		var attr = context.attributes;
         var tile = attr.tile;
@@ -391,7 +440,7 @@ export function Rippa() {
 			// now draw the tile		
 			var rowIndex;
 			for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
-				if (renderContext.terminateRendering)
+				if (tileContext.terminateRendering)
 					break;
 
 				var y = cy + (rowIndex * view.zoom.v);
@@ -418,7 +467,7 @@ export function Rippa() {
 
 							var columnIndex;
 							for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
-								if (renderContext.terminateRendering)
+								if (tileContext.terminateRendering)
 									break;
 
 								// initalise our pixel [ABCD]
@@ -472,6 +521,8 @@ export function Rippa() {
 								
 								var systemIndex = tilePalette.ToIndex(pixel);
 
+								var ctx = canvas.getContext('2d');
+								
 								// draw resultant pixel
 								ctx.fillStyle = systemPalette.ToRGB(systemIndex);
 										  
@@ -484,4 +535,76 @@ export function Rippa() {
 			} // for each row
 		}); // array buffer
     }
+}
+
+var PaletteView = function() {
+	this.createContext = function(attributes) {
+        return new PaletteContext(attributes);
+    }
+	this.render = async function(context, canvas) {
+		if (context && canvas) {
+			await context.beginRender();
+			
+			if (context.clear) {
+				var ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			await this.renderTiles(context, canvas, offset);
+			
+			context.endRender();
+		}
+	}
+	this.renderTiles = async function(context, canvas, offset) {
+		var attr = context.attributes;
+        var packing = attr.packing;
+        var view = attr.view;
+        
+
+        var th = (8 * view.zoom.v) + view.spacing.v;
+        var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
+        var tw = (8 * view.zoom.h) + view.spacing.h;
+		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
+
+        if (context.clear) {
+			var ctx = canvas.getContext('2d');
+
+            var bw = 2 * view.margin.h + (maxColumns * tw);
+            var bh = 2 * view.margin.v + (maxRows * th);
+        
+            ctx.fillStyle = 'rgb(80, 80, 80)';
+            ctx.fillRect(0,0, bw, bh);
+        }
+        
+        var cy = view.margin.v;
+        
+		/*var row;
+		for (row = 0; row < maxRows; ++row) {
+			if (tileContext.terminateRendering)
+				break;
+
+            var cx = view.margin.h;
+        
+			await this.renderRow(tileContext, canvas, cx, cy, offset);
+			
+			offset += (tile.size.w * maxColumns * tile.size.h) / packing.pixelsPerByte;
+			cy += th;
+        }*/
+    }
+}
+
+export function Rippa() {
+	
+	this.createAttributesFromPreset = function(presetName) {
+		if(presetName == "MSX2Screen") {
+			var preset = new MSX2ScreenPreset();
+			return preset.attributes;
+		}
+	}
+	this.createTileView = function(attributes) {
+        return new TileView();
+    }
+	this.createPaletteView = function(attributes) {
+        return new PaletteView();
+    }	
 };
