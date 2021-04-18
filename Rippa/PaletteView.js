@@ -3,7 +3,7 @@ import {RenderContext} from "../Canvas/RenderContext.js"
 
 var ViewAttributes = function() {
     this.margin = new Common.Axis(2, 2);
-    this.spacing = new Common.Axis(2, 2);
+    this.spacing = new Common.Axis(1, 1);
     this.zoom = new Common.Axis(1, 1);
 }
 
@@ -18,7 +18,6 @@ var PaletteContext = function(attributes) {
 PaletteContext.prototype = new RenderContext();
 PaletteContext.construct = PaletteContext;
 
-
 export var PaletteView = function() {
 	this.createContext = function(attributes) {
         return new PaletteContext(attributes);
@@ -32,44 +31,76 @@ export var PaletteView = function() {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
 
-			await this.renderTiles(context, canvas, offset);
+			await this.renderTiles(context, canvas);
 			
 			context.endRender();
 		}
 	}
-	this.renderTiles = async function(context, canvas, offset) {
+	this.renderTiles = async function(context, canvas, indexedPalette = null) {
 		var view = context.view;
 		var attr = context.attributes;
         var packing = attr.packing;
+		var systemPalette = attr.systemPalette;
 
-        var th = (8 * view.zoom.v) + view.spacing.v;
-        var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
-        var tw = (8 * view.zoom.h) + view.spacing.h;
-		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
+		var count = 2**(indexedPalette ? indexedPalette.bpp : systemPalette.bpp);
+		var best_size = 8;
+		var temp_size = best_size;
+		var tooBig = false;
+		var tooSmall = false;
+		
+		while(true) {
+			var hstride = temp_size + view.spacing.v;
+			var vstride = temp_size + view.spacing.h;
+			// for multiples of 8 tiles
+			var maxColumns = 8 * Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / (hstride*8)));	
+			var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / vstride));
+			
+			if (count > (maxRows*maxColumns)) {
+				if (tooSmall) {
+					break;
+				}
+				tooBig = true;
+				--temp_size;
+			} else {
+				best_size = temp_size;
+				if (tooBig) {
+					break;
+				}
+				
+				tooSmall = true;
+				++temp_size;
+			}			
+		};
+		
+		var tw = best_size;
+		var th = best_size;
+
+		var ctx = canvas.getContext('2d');
 
         if (context.invalidate) {
-			var ctx = canvas.getContext('2d');
-
-            var bw = 2 * view.margin.h + (maxColumns * tw);
-            var bh = 2 * view.margin.v + (maxRows * th);
+            var bw = 2 * view.margin.h + (maxColumns * hstride);
+            var bh = 2 * view.margin.v + (maxRows * vstride);
         
             ctx.fillStyle = 'rgb(80, 80, 80)';
             ctx.fillRect(0,0, bw, bh);
         }
         
         var cy = view.margin.v;
-        
-		/*var row;
-		for (row = 0; row < maxRows; ++row) {
-			if (tileContext.terminateRendering)
-				break;
+        var cx = view.margin.h;
 
-            var cx = view.margin.h;
-        
-			await this.renderRow(tileContext, canvas, cx, cy, offset);
+		var paletteIndex = 0;
+		var row;
+		for (row = 0; row < maxRows; ++row) {
+			var y = cy + (row * vstride);
+
+			var column;
+			for (column = 0; column < maxColumns; ++column) {
+				var x = cx + (column * hstride);
+				// draw resultant pixel
+				ctx.fillStyle = systemPalette.ToRGB(paletteIndex++);							
+				ctx.fillRect(x, y, tw, th);
+			}
 			
-			offset += (tile.size.w * maxColumns * tile.size.h) / packing.pixelsPerByte;
-			cy += th;
-        }*/
+		}
     }
 }

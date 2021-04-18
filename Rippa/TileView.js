@@ -19,28 +19,6 @@ var Context = function(attributes) {
 		this.tilePromise = null;
 		this.tileCount = 0;
 	}
-	/*this.terminateRendering = false;
-	
-	this.invalidate = async function() {
-		this.clearReq = true;
-	}
-	this.beginRender = async function() {
-		this.terminateRendering = true;
-		await this.renderingPromise;
-		this.renderingPromise = new Promise(resolve => { this.resolveRenderFn = resolve });
-		this.terminateRendering = false;
-
-		// just ensure tile semephore is reset
-		this.tilePromise = null;
-		this.tileCount = 0;
-
-		// cache the clear status from the request
-		this.clear = this.clearReq;
-		this.clearReq = false;
-	}
-	this.endRender = async function() {
-		this.resolveRenderFn();
-	}*/
 	this.beginTile = async function() {
 		if (this.tileCount > this.maxConcurrentTiles) {
 			if (this.tilePromise !== null)
