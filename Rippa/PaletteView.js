@@ -1,5 +1,4 @@
 import * as Common from "../Rippa/Common.js"
-import {RenderContext} from "../Canvas/RenderContext.js"
 
 var ViewAttributes = function() {
     this.margin = new Common.Axis(2, 2);
@@ -7,22 +6,19 @@ var ViewAttributes = function() {
     this.zoom = new Common.Axis(1, 1);
 }
 
-var PaletteContext = function(attributes) {
-	this.blob = null;
-	this.attributes = attributes;
+var Context = function() {
 	this.view = new ViewAttributes();
-	this.nav = new Common.Navigation();
 	this.onBeginRender = async function() {
 	}
 }
-PaletteContext.prototype = new RenderContext();
-PaletteContext.construct = PaletteContext;
+Context.prototype = new Common.RenderContext();
+Context.construct = Context;
 
 export var PaletteView = function() {
 	this.createContext = function(attributes) {
-        return new PaletteContext(attributes);
+        return new Context(attributes);
     }
-	this.render = async function(context, canvas) {
+	this.render = async function(context, canvas, palette) {
 		if (context && canvas) {
 			await context.beginRender();
 			
@@ -31,18 +27,15 @@ export var PaletteView = function() {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
 
-			await this.renderTiles(context, canvas);
+			await this.renderTiles(context, canvas, palette);
 			
 			context.endRender();
 		}
 	}
-	this.renderTiles = async function(context, canvas, indexedPalette = null) {
+	this.renderTiles = async function(context, canvas, palette) {
 		var view = context.view;
-		var attr = context.attributes;
-        var packing = attr.packing;
-		var systemPalette = attr.systemPalette;
 
-		var count = 2**(indexedPalette ? indexedPalette.bpp : systemPalette.bpp);
+		var count = 2**palette.bpp;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
@@ -97,7 +90,7 @@ export var PaletteView = function() {
 			for (column = 0; column < maxColumns; ++column) {
 				var x = cx + (column * hstride);
 				// draw resultant pixel
-				ctx.fillStyle = systemPalette.ToRGB(paletteIndex++);							
+				ctx.fillStyle = palette.ToRGB(paletteIndex++);							
 				ctx.fillRect(x, y, tw, th);
 			}
 			

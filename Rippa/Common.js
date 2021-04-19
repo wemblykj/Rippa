@@ -1,3 +1,5 @@
+import {RenderContext as BaseRenderContext} from "../Canvas/RenderContext.js"
+
 export var Axis = function(h, v) {
     this.h = h;
     this.v = v;
@@ -23,3 +25,13 @@ export var Point = function(x, y) {
 export var Navigation = function(offset = 0) {
     this.offset = offset;
 }
+
+var RenderContext = function() {
+    this.palette = undefined;
+
+    this.BindPalette = function(palette) {
+        this.palette = palette;
+    }
+}
+RenderContext.prototype = new BaseRenderContext();
+RenderContext.prototype.construct = RenderContext;

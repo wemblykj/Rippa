@@ -64,7 +64,7 @@
 
         var paletteCanvas = document.getElementById('paletteCanvas');
 		var paletteContext = window.paletteContext;
-        window.paletteView.render(paletteContext, paletteCanvas);
+        window.paletteView.render(paletteContext, paletteCanvas, attr);
    }
     
    function updateTileViewUI(view) {
@@ -195,7 +195,7 @@
         window.tileContext = window.tileView.createContext(attributes);
         
         window.paletteView = rippa.createPaletteView();
-        window.paletteContext = window.paletteView.createContext(attributes);
+        window.paletteContext = window.paletteView.createContext();
 
         var testData = new Uint8Array(
         [

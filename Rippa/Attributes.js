@@ -16,23 +16,6 @@ export var PlaneAttributes = function(planeCount) {
     };
 }
   
-export var IndexedPalette = function(bitsPerPixel, lut) {
-    this.bpp = bitsPerPixel;
-    this.lut = lut;
-    this.ToIndex = function(index) {
-        var i = index & ((2**this.bpp)-1);
-        return this.lut[i];
-    };
-}
-  
-export var SystemPalette = function(bitsPerPixel, rgbArray) {
-    this.bpp = bitsPerPixel;
-    this.rgbArray = rgbArray;
-    this.ToRGB = function(index) {
-      var i = index & ((2**this.bpp)-1);
-      return this.rgbArray[i];
-    };
-}
 
 export var Attributes = function(w, h, tile_bpp, system_bpp, tilePalette = null, systemPalette = null) {
 	this.tile = new TileAttributes(w, h);

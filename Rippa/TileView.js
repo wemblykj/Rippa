@@ -1,5 +1,4 @@
 import * as Common from "../Rippa/Common.js"
-import {RenderContext} from "../Canvas/RenderContext.js"
 
 var ViewAttributes = function(planeMask = 0xff) {
     this.margin = new Common.Axis(2, 2);
@@ -40,7 +39,7 @@ var Context = function(attributes) {
 	//this._tileSemaphore = new AsyncSemaphore(8);		///< limit the number of tiles drawn concurrently
 	
 }
-Context.prototype = new RenderContext();
+Context.prototype = new Common.RenderContext();
 Context.construct = Context;
 
 export var TileView = function() {
