@@ -60,10 +60,10 @@ var ByteStream = function(stream, fifoSize) {
 
 export function Rippa() {
 	
-	this.createAttributesFromPreset = function(presetName) {
+	this.getPresetByName = function(presetName) {
 		if(presetName == "MSX2Screen") {
 			var preset = new MSX2Screen();
-			return preset.attributes;
+			return preset;
 		}
 	}
 	this.createTileView = function(attributes) {

@@ -1,4 +1,5 @@
 import * as Common from "../Rippa/Common.js"
+import {RenderContext as BaseRenderContext} from "../Graphics/RenderContext.js"
 
 var ViewAttributes = function(planeMask = 0xff) {
     this.margin = new Common.Axis(2, 2);
@@ -34,7 +35,7 @@ var Context = function(attributes) {
 		}
 	}
 }
-Context.prototype = new Common.RenderContext();
+Context.prototype = new BaseRenderContext();
 Context.construct = Context;
 
 export var TileView = function() {
@@ -47,7 +48,7 @@ export var TileView = function() {
 			
 			var offset = context.nav.offset;
 			
-			if (context.invalidate) {
+			if (context.invalidated) {
 				var ctx = canvas.getContext('2d');
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
@@ -69,7 +70,7 @@ export var TileView = function() {
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
 		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
-        if (context.invalidate) {
+        if (context.invalidated) {
 			var ctx = canvas.getContext('2d');
 
             var bw = 2 * view.margin.h + (maxColumns * tw);

@@ -20,7 +20,7 @@ export var IndexedPalette = function(bitsPerPixel, systemPalette = null, lut = n
     }
 
     this.ToRGB = function(index) {
-        _systemPalette.ToRGB(this.ToIndex(index));
+        return _systemPalette.ToRGB(this.ToIndex(index));
     }
     this.ToIndex = function(index) {
         var i = index & ((2**this.bitsPerPixel)-1);
@@ -30,7 +30,7 @@ export var IndexedPalette = function(bitsPerPixel, systemPalette = null, lut = n
 IndexedPalette.prototype = new Palette();
 IndexedPalette.construct = IndexedPalette;
 
-export var SystemPalette = function(bitsPerPixel, rgbArray = null) {
+export var RGBPalette = function(bitsPerPixel, rgbArray = null) {
     var _rgbArray = rgbArray;
 
     this.bitsPerPixel = bitsPerPixel;
@@ -41,8 +41,8 @@ export var SystemPalette = function(bitsPerPixel, rgbArray = null) {
 
     this.ToRGB = function(index) {
       var i = index & ((2**this.bitsPerPixel)-1);
-      return rgbArray[i];
+      return _rgbArray[i];
     };
 }
-SystemPalette.prototype = new Palette();
-SystemPalette.construct = SystemPalette;
+RGBPalette.prototype = new Palette();
+RGBPalette.construct = RGBPalette;

@@ -66,7 +66,7 @@
         var paletteCanvas = document.getElementById('paletteCanvas');
 		var paletteContext = window.paletteContext;
         paletteContext.BindPalette(window.tilePalette);
-        window.paletteView.render(paletteContext, paletteCanvas, attr);
+        window.paletteView.render(paletteContext, paletteCanvas);
    }
     
    function updateTileViewUI(view) {
@@ -190,8 +190,11 @@
         dropZone.addEventListener("drop"    , drop    , false);
         
         var rippa = new Rippa();
-        var attributes = rippa.createAttributesFromPreset("MSX2Screen");
-       
+        var preset = rippa.getPresetByName("MSX2Screen");
+        var attributes = preset.attributes;
+        window.systemPalette = preset.systemPalette;
+        window.tilePalette = preset.tilePalette;
+
         window.rippa = rippa;
         window.tileView = rippa.createTileView();
         window.tileContext = window.tileView.createContext(attributes);
@@ -200,10 +203,11 @@
         window.paletteContext = window.paletteView.createContext();
 
         // produce a default intensity/RGB based palette
-
+/*
         var system_bpp = 9;
         var tile_bpp = 4;
         
+        var systemPaletteCount = 2**system_bpp;
         var systemPalette = [];
 		var step = (255 / (systemPaletteCount >> 3));
 		var intensityBits = (8 - (system_bpp-3));
@@ -228,7 +232,7 @@
 			systemPalette[paletteIndex] = rgb;
 		}
         
-	    window.systemPalette = new SystemPalette(system_bpp, systemPalette);
+	    window.systemPalette = new Graphics.RGBPalette(system_bpp, systemPalette);
 
         var tilePalette = [];
         var paletteIndex;
@@ -240,8 +244,8 @@
 			tilePalette[paletteIndex] = systemIndex;
 		}
 
-	    window.tilePalette = new IndexedPalette(tile_bpp, window.systemPalette, tilePalette);
-	
+	    window.tilePalette = new Graphics.IndexedPalette(tile_bpp, window.systemPalette, tilePalette);
+*/	
         var testData = new Uint8Array(
         [
         // 8x8 8-bit

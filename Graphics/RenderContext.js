@@ -1,29 +1,42 @@
 export var RenderContext = function(attributes) {
+	var _invalidateReq = true;
+	var _resolveRenderFn = null;
+	var _renderingPromise = undefined;
+
+	this.invalidated = false;
 	this.terminateRendering = false;
-	this._invalidateReq = true;
+	this.palette = undefined;
+
 	this.invalidate = async function() {
-		this._invalidateReq = true;
+		_invalidateReq = true;
 	}
+	
+    this.BindPalette = function(palette) {
+        this.palette = palette;
+    }
 	this.beginRender = async function() {
 		if (this.isRendering) {
 			this.terminateRendering = true;
-			await this.renderingPromise;
-			this.renderingPromise = new Promise(resolve => { this.resolveRenderFn = resolve });
+			await _renderingPromise;
+			_renderingPromise = new Promise(resolve => { _resolveRenderFn = resolve });
 		}
 		
 		this.terminateRendering = false;
 		this.isRendering = true;
 
 		// cache the invalidate status
-		this.invalidate = this._invalidateReq = true;
-		this._invalidateReq = false;
+		this.invalidated = _invalidateReq;
+		_invalidateReq = false;
 
 		await this.onBeginRender();
 	}
 	this.endRender = async function() {
 		this.isRendering = false;
 		await this.onEndRender();
-		this.resolveRenderFn();
+		if (_resolveRenderFn) {
+			_resolveRenderFn();
+			_resolveRenderFn = null;
+		}
 	}
 	this.cancelRender = async function() {
 		this.terminateRendering = true;

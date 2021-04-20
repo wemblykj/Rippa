@@ -1,8 +1,25 @@
 import {Preset} from "../Rippa/Preset.js"
 import {Attributes} from "../Rippa/Attributes.js"
+import * as Graphics from "../Graphics/Palette.js"
 
 export var MSX2Screen = function(name) {
 	this.name = name;
+
+	var systemPalette = [];
+	var step_n = 255.0;
+	var step_d = 7.0;
+	var paletteIndex;
+	for (paletteIndex = 0; paletteIndex < 512; ++paletteIndex) {
+		var b = Math.floor((step_n * (paletteIndex & 0x07)) / step_d);
+		var r = Math.floor((step_n * ((paletteIndex >> 3) & 0x07)) / step_d);
+		var g = Math.floor((step_n * ((paletteIndex >> 6) & 0x07)) / step_d);
+
+		var rgb = `rgb(${r}, ${g}, ${b})`;
+
+		systemPalette[paletteIndex] = rgb;
+	}
+
+	this.systemPalette = new Graphics.RGBPalette(9, systemPalette);
 
 	// MSX2 palette at reset
 	var tilePalette = [ 
@@ -24,21 +41,9 @@ export var MSX2Screen = function(name) {
 		0x1ff 	// 111_111_111 => 1_1111_1111
 	];
 	
-	var systemPalette = [];
-	var step_n = 255.0;
-	var step_d = 7.0;
-	var paletteIndex;
-	for (paletteIndex = 0; paletteIndex < 512; ++paletteIndex) {
-		var b = Math.floor((step_n * (paletteIndex & 0x07)) / step_d);
-		var r = Math.floor((step_n * ((paletteIndex >> 3) & 0x07)) / step_d);
-		var g = Math.floor((step_n * ((paletteIndex >> 6) & 0x07)) / step_d);
+	this.tilePalette = new Graphics.IndexedPalette(4, this.systemPalette, tilePalette);
 
-		var rgb = `rgb(${r}, ${g}, ${b})`;
-
-		systemPalette[paletteIndex] = rgb;
-	}
-
-	this.attributes = new Attributes(256, 212, 4, 9, tilePalette, systemPalette);
+	this.attributes = new Attributes(256, 212, 4);
 }
 
 MSX2Screen.prototype = new Preset();
