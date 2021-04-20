@@ -8,6 +8,8 @@
   <script type="module">
     import {Rippa} from './Rippa/Rippa.js'
 	
+    var paletteViewType = 1;
+
 	window.onOpenFile = function(event) {
         event.stopPropagation();
         event.preventDefault();
@@ -49,7 +51,19 @@
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
     }
-    
+
+    function bindPalette() {
+        window.tileContext.BindPalette(window.tilePalette);
+
+        switch(paletteViewType) {
+            case 0:
+                window.paletteContext.BindPalette(window.systemPalette);
+                break;
+            case 1:
+                window.paletteContext.BindPalette(window.tilePalette);
+        }
+    }
+
     function render() { 
         /*var paletteCanvas = document.getElementById('paletteCanvas');
 		var paletteContext = window.paletteContext;
@@ -59,17 +73,15 @@
         var tileCanvas = document.getElementById('tileCanvas');
 		var tileContext = window.tileContext;
         if (tileContext.blob !== null) {
-            tileContext.BindPalette(window.tilePalette);
             window.tileView.render(tileContext, tileCanvas);
         }
 
         var paletteCanvas = document.getElementById('paletteCanvas');
 		var paletteContext = window.paletteContext;
-        paletteContext.BindPalette(window.tilePalette);
         window.paletteView.render(paletteContext, paletteCanvas);
    }
     
-   function updateTileViewUI(view) {
+   function updateTileViewSettingsUI(view) {
         var zoomCtl = document.getElementById("zoom");
         zoomCtl.value = Math.floor(view.zoom.h * 100);
    }
@@ -98,26 +110,36 @@
         planeEndian.value = planeAttr.endian;
     }
     
-    function updateUI() {
-        var tileContext = window.tileContext;
+    function updateTileViewUI() {
+        var context = window.tileContext;
 
-        updateTileViewUI(tileContext.view);
-        updateTileNavigationUI(tileContext.nav);
-        updateTileUI(tileContext.attributes.tile);
-        updatePackingUI(tileContext.attributes.packing);
+        updateTileViewSettingsUI(context.view);
+        updateTileNavigationUI(context.nav);
+        updateTileUI(context.attributes.tile);
+        updatePackingUI(context.attributes.packing);
+    }
+
+    function updatePaletteViewUI() {
+        var paletteViewTypeCtrl = document.getElementById("paletteViewType");
+        paletteViewTypeCtrl.value = paletteViewType
+    }
+
+    function updateUI() {
+        updateTileViewUI();
+        updatePaletteViewUI();
     }
     
     window.onViewChanged = function(event) {
-        var tileContext = window.tileContext;
+        var context = window.tileContext;
 
         if (event.target.id == "zoom") {
             var z = parseInt(event.target.value);
             z = Math.max(50, z) / 100;
-            tileContext.attributes.view.zoom.h = z;
-            tileContext.attributes.view.zoom.v = z;
+            context.attributes.view.zoom.h = z;
+            context.attributes.view.zoom.v = z;
         }
         
-        tileContext.invalidate();
+        context.invalidate();
         render();
     }
     
@@ -125,7 +147,7 @@
         if (event.target.id == "offset") {
             var offset = parseInt(event.target.value);
             offset = Math.max(0, offset);
-            tileContext.attributes.tileNav.offset = offset;
+            window.tileContext.attributes.tileNav.offset = offset;
         }
         
         //tileContext.invalidate();
@@ -133,33 +155,46 @@
     }
 
     window.onTileAttrChanged = function(event) {
-        var tileContext = window.tileContext;
+        var context = window.tileContext;
         
         if (event.target.id == "tileWidth") {
-            tileContext.attributes.tile.size.w = parseInt(event.target.value);
+            context.attributes.tile.size.w = parseInt(event.target.value);
         } else if (event.target.id == "tileHeight") {
-            tileContext.attributes.tile.size.h = parseInt(event.target.value);
+            context.attributes.tile.size.h = parseInt(event.target.value);
         }
 
-        tileContext.invalidate();
+        context.invalidate();
         render();
     }
     
     window.onPlaneAttrChanged = function(event) {
-        var tileContext = window.tileContext;
+        var context = window.tileContext;
 
         if (event.target.id == "planeCount") {
-            tileContext.attributes.packing.setPlaneCount(parseInt(event.target.value));
+            context.attributes.packing.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
-            tileContext.attributes.packing.packing = parseInt(event.target.value);
+            context.attributes.packing.packing = parseInt(event.target.value);
         } else if (event.target.id == "planeEndian") {
-            tileContext.attributes.packing.endian = parseInt(event.target.value);
+            context.attributes.packing.endian = parseInt(event.target.value);
         }
         
-        tileContext.invalidate();
+        context.invalidate();
         render();
     }
     
+    window.onPaletteViewChanged = function(event) {
+        var context = window.paletteContext;
+
+        if (event.target.id == "paletteViewType") {
+            paletteViewType = parseInt(event.target.value);
+            bindPalette();
+
+            context.invalidate();
+        }
+        
+        render();
+    }
+
     function _resize() {
         var tileCanvas = document.getElementById('tileCanvas');
 		
@@ -344,6 +379,7 @@
         
         _resize();
 
+        bindPalette();
         render();
     }
     
@@ -381,14 +417,14 @@
                     <option value="8">8-bit</option>
                 </select>
                 <label for="planePacking">Plane packing</label>
-                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event); return false;"/>
+                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event); return false;">
                     <option value="0">Interleaved</option>
                     <option value="1">Byte</option>
                     <option value="2">Line</option>
                     <option value="3">Tile</option>
                 </select>
                 <label for="planeEndian">Plane endianess</label>
-                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event); return false;"/>
+                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event); return false;">
                     <option value="0">Little</option>
                     <option value="1">Big</option>
                 </select>
@@ -401,12 +437,20 @@
         </div>
         <div id="PaletteControls">
             <div>
+                <label for="paletteViewType">View</label>
+                <select id="paletteViewType" type="number" onchange="onPaletteViewChanged(event); return false;">
+                    <option value="0">System</option>
+                    <option value="1">Tile</option>
+                    <option value="2">Search</option>
+                </select>
+            </div>
+            <div>
                 <label for="zoom">Zoom</label>
-                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
+                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onPaletteViewChanged(event); return false;"/>
             </div>
             <div>
                 <label for="offset">Offset</label>
-                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
+                <input id="offset" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
             </div>
         </div>
     </div>
