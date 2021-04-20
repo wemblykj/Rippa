@@ -59,11 +59,13 @@
         var tileCanvas = document.getElementById('tileCanvas');
 		var tileContext = window.tileContext;
         if (tileContext.blob !== null) {
+            tileContext.BindPalette(window.tilePalette);
             window.tileView.render(tileContext, tileCanvas);
         }
 
         var paletteCanvas = document.getElementById('paletteCanvas');
 		var paletteContext = window.paletteContext;
+        paletteContext.BindPalette(window.tilePalette);
         window.paletteView.render(paletteContext, paletteCanvas, attr);
    }
     
@@ -197,6 +199,49 @@
         window.paletteView = rippa.createPaletteView();
         window.paletteContext = window.paletteView.createContext();
 
+        // produce a default intensity/RGB based palette
+
+        var system_bpp = 9;
+        var tile_bpp = 4;
+        
+        var systemPalette = [];
+		var step = (255 / (systemPaletteCount >> 3));
+		var intensityBits = (8 - (system_bpp-3));
+		var intensityStep = 2**intensityBits;
+		for (paletteIndex = 0; paletteIndex < systemPaletteCount; ++paletteIndex) {
+			var i = (paletteIndex >> 3) * intensityStep;
+
+			if (paletteIndex & 7) {
+				i = (i + intensityStep) - 1;
+				var r = Math.floor(i * ((paletteIndex & 0x02) >> 1));
+				var g = Math.floor(i * ((paletteIndex & 0x04) >> 2));
+				var b = Math.floor(i * (paletteIndex & 0x01));
+
+				var rgb = `rgb(${r}, ${g}, ${b})`;
+			}
+			else {
+				// greyscale
+				i = i
+				var rgb = `rgb(${i}, ${i}, ${i})`;
+			}
+			
+			systemPalette[paletteIndex] = rgb;
+		}
+        
+	    window.systemPalette = new SystemPalette(system_bpp, systemPalette);
+
+        var tilePalette = [];
+        var paletteIndex;
+		var systemPaletteCount = (2**system_bpp);
+		var tilePaletteCount = (2**tile_bpp);
+		var step = (systemPaletteCount-1) / (tilePaletteCount-1);
+		for (paletteIndex = 0; paletteIndex < tilePaletteCount; ++paletteIndex) {
+			var systemIndex = Math.floor(paletteIndex * step);
+			tilePalette[paletteIndex] = systemIndex;
+		}
+
+	    window.tilePalette = new IndexedPalette(tile_bpp, window.systemPalette, tilePalette);
+	
         var testData = new Uint8Array(
         [
         // 8x8 8-bit
@@ -309,21 +354,21 @@
             <canvas class="greedy" id="tileCanvas"></canvas>
         </div>
         <div id="TileControls">
-            <span>
+            <div>
                 <label for="zoom">Zoom</label>
                 <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
-            </span>
-            <span>
+            </div>
+            <div>
                 <label for="offset">Offset</label>
                 <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
-            </span>
-            <span>
+            </div>
+            <div>
                 <label for="tileWidth">Tile width</label>
                 <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
                 <label for="tileHeight">Tile height</label>
                 <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
-            </span>
-            <span>
+            </div>
+            <div>
                 <label for="planeCount">Plane count</label>
                 <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event); return false;">
                     <option value="1">1-bit</option>
@@ -343,7 +388,7 @@
                     <option value="0">Little</option>
                     <option value="1">Big</option>
                 </select>
-            </span>
+            </div>
         </div>
     </div>
     <div class="container" id="PalettePane">
@@ -351,14 +396,14 @@
             <canvas id="paletteCanvas" ></canvas>
         </div>
         <div id="PaletteControls">
-            <span>
+            <div>
                 <label for="zoom">Zoom</label>
                 <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
-            </span>
-            <span>
+            </div>
+            <div>
                 <label for="offset">Offset</label>
                 <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
-            </span>
+            </div>
         </div>
     </div>
  </body>

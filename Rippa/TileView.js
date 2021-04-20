@@ -33,11 +33,6 @@ var Context = function(attributes) {
 			this.tileResolveFn();
 		}
 	}
-
-	//this._renderPromise;
-	//this._renderSemaphore = new AsyncSemaphore(1);	///< ensure we are not rendering more than one screen at a time
-	//this._tileSemaphore = new AsyncSemaphore(8);		///< limit the number of tiles drawn concurrently
-	
 }
 Context.prototype = new Common.RenderContext();
 Context.construct = Context;
@@ -135,11 +130,11 @@ export var TileView = function() {
 	
     this.drawTile = async function(context, canvas, offset, cx, cy) {
 		var blob = context.blob;
+		var palette = context.palette;
 		var view = context.view;
 		var attr = context.attributes;
         var tile = attr.tile;
-		var tilePalette = attr.tilePalette;
-        var systemPalette = attr.systemPalette;
+		
         var packing = attr.packing;
         
 		var start = offset;// + (tile.stride * rowIndex) / packing.pixelsPerByte;
@@ -232,12 +227,10 @@ export var TileView = function() {
 								// apply plane view mask
 								pixel &= view.planeMask;
 								
-								var systemIndex = tilePalette.ToIndex(pixel);
-
 								var ctx = canvas.getContext('2d');
 								
 								// draw resultant pixel
-								ctx.fillStyle = systemPalette.ToRGB(systemIndex);
+								ctx.fillStyle = palette.ToRGB(pixel);
 										  
 								var x = cx + (columnIndex * view.zoom.h);
 								ctx.fillRect(x, y, view.zoom.h, view.zoom.v);	

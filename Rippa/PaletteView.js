@@ -18,7 +18,7 @@ export var PaletteView = function() {
 	this.createContext = function(attributes) {
         return new Context(attributes);
     }
-	this.render = async function(context, canvas, palette) {
+	this.render = async function(context, canvas) {
 		if (context && canvas) {
 			await context.beginRender();
 			
@@ -32,10 +32,11 @@ export var PaletteView = function() {
 			context.endRender();
 		}
 	}
-	this.renderTiles = async function(context, canvas, palette) {
+	this.renderTiles = async function(context, canvas) {
 		var view = context.view;
+		var palette = context.palette;
 
-		var count = 2**palette.bpp;
+		var count = 2**palette.bitsPerPixel;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
