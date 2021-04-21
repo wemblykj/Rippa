@@ -15,7 +15,7 @@ var RenderContext = function() {
 RenderContext.prototype = new BaseRenderContext();
 RenderContext.construct = RenderContext;
 
-export var PaletteView = function() {
+export var PaletteSearchView = function() {
 	this.createContext = function() {
         return new RenderContext();
     }

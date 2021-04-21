@@ -1,6 +1,6 @@
-import * as Common from "./Common.js"
-import * as TileView from "./TileView.js"
 import * as PaletteView from "./PaletteView.js"
+import * as PaletteSearchView from "./PaletteSearchView.js"
+import * as TileSearchView from "./TileSearchView.js"
 import {MSX2Screen} from "../Preset/Msx2.js"
 
 /*
@@ -66,10 +66,13 @@ export function Rippa() {
 			return preset;
 		}
 	}
-	this.createTileView = function(attributes) {
-        return new TileView.TileView();
-    }
 	this.createPaletteView = function(attributes) {
         return new PaletteView.PaletteView();
     }	
+	this.createPaletteSearchView = function(attributes) {
+        return new PaletteSearchView.PaletteSearchView();
+    }	
+	this.createTileSearchView = function(attributes) {
+        return new TileSearchView.TileSearchView();
+    }
 };

@@ -54,6 +54,7 @@
 
     function bindPalette() {
         window.tileContext.BindPalette(window.tilePalette);
+        window.paletteSearchContext.BindPalette(window.tilePalette);
 
         switch(paletteViewType) {
             case 0:
@@ -73,15 +74,22 @@
         var tileCanvas = document.getElementById('tileCanvas');
 		var tileContext = window.tileContext;
         if (tileContext.blob !== null) {
-            window.tileView.render(tileContext, tileCanvas);
+            window.tileSearchView.render(tileContext, tileCanvas);
         }
 
         var paletteCanvas = document.getElementById('paletteCanvas');
-		var paletteContext = window.paletteContext;
-        window.paletteView.render(paletteContext, paletteCanvas);
+        switch(paletteViewType) {
+            case 0:
+            case 1:
+                window.paletteView.render(window.paletteContext, paletteCanvas);
+                break;
+            case 2:
+                window.paletteSearchView.render(window.paletteSearchContext, paletteCanvas);
+                break;
+        }
    }
     
-   function updateTileViewSettingsUI(view) {
+   function updateTileSearchViewSettingsUI(view) {
         var zoomCtl = document.getElementById("zoom");
         zoomCtl.value = Math.floor(view.zoom.h * 100);
    }
@@ -110,10 +118,10 @@
         planeEndian.value = planeAttr.endian;
     }
     
-    function updateTileViewUI() {
+    function updateTileSearchViewUI() {
         var context = window.tileContext;
 
-        updateTileViewSettingsUI(context.view);
+        updateTileSearchViewSettingsUI(context.view);
         updateTileNavigationUI(context.nav);
         updateTileUI(context.attributes.tile);
         updatePackingUI(context.attributes.packing);
@@ -125,7 +133,7 @@
     }
 
     function updateUI() {
-        updateTileViewUI();
+        updateTileSearchViewUI();
         updatePaletteViewUI();
     }
     
@@ -183,13 +191,16 @@
     }
     
     window.onPaletteViewChanged = function(event) {
-        var context = window.paletteContext;
-
         if (event.target.id == "paletteViewType") {
             paletteViewType = parseInt(event.target.value);
             bindPalette();
 
-            context.invalidate();
+            switch(paletteViewType) {
+                case 0:
+                case 1:
+                    window.paletteContext.invalidate();
+                    break;
+            }
         }
         
         render();
@@ -231,12 +242,16 @@
         window.tilePalette = preset.tilePalette;
 
         window.rippa = rippa;
-        window.tileView = rippa.createTileView();
-        window.tileContext = window.tileView.createContext(attributes);
         
         window.paletteView = rippa.createPaletteView();
         window.paletteContext = window.paletteView.createContext();
 
+        window.paletteSearchView = rippa.createPaletteSearchView();
+        window.paletteSearchContext = window.paletteSearchView.createContext();
+
+        window.tileSearchView = rippa.createTileSearchView();
+        window.tileContext = window.tileSearchView.createContext(attributes);
+        
         // produce a default intensity/RGB based palette
 /*
         var system_bpp = 9;
@@ -390,7 +405,7 @@
         <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
     </div>
     <div class="container" id="TilePane">
-        <div class="greedy" id="TileView">
+        <div class="greedy" id="TileSearchView">
             <canvas class="greedy" id="tileCanvas"></canvas>
         </div>
         <div id="TileControls">

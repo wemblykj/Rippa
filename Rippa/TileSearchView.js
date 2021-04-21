@@ -8,7 +8,7 @@ var ViewAttributes = function(planeMask = 0xff) {
     this.zoom = new Common.Axis(1, 1);
 }
   
-var Context = function(attributes) {
+var RenderContext = function(attributes) {
 	this.blob = null;
 	this.attributes = attributes;
     this.view = new ViewAttributes();
@@ -35,12 +35,12 @@ var Context = function(attributes) {
 		}
 	}
 }
-Context.prototype = new BaseRenderContext();
-Context.construct = Context;
+RenderContext.prototype = new BaseRenderContext();
+RenderContext.construct = RenderContext;
 
-export var TileView = function() {
+export var TileSearchView = function() {
 	this.createContext = function(attributes) {
-        return new Context(attributes);
+        return new RenderContext(attributes);
     }
     this.render = async function(context, canvas) {	
 		if (context && canvas) {
