@@ -11,11 +11,11 @@ export var IndexedPalette = function(bitsPerPixel, systemPalette = null, lut = n
 
     this.bitsPerPixel = bitsPerPixel;
     
-    this.BindSystemPalette = function(systemPalette) {
+    this.setSystemPalette = function(systemPalette) {
         _systemPalette = systemPalette;
     }
 
-    this.BindLUT = function(lut) {
+    this.setLUT = function(lut) {
         _lut = lut;
     }
 
@@ -35,7 +35,7 @@ export var RGBPalette = function(bitsPerPixel, rgbArray = null) {
 
     this.bitsPerPixel = bitsPerPixel;
     
-    this.BindRGBArray = function(rgbArray) {
+    this.setRGBArray = function(rgbArray) {
         _rgbArray = rgbArray;
     }
 

@@ -8,7 +8,14 @@ var ViewAttributes = function() {
 }
 
 var RenderContext = function() {
+	this.blob = null;
 	this.view = new ViewAttributes();
+	this.bindBinary = function(blob) {
+		if (blob != this.blob) {
+			this.blob = blob;
+			this.invalidate();
+		}
+	}
 	this.onBeginRender = async function() {
 	}
 }
@@ -35,9 +42,10 @@ export var PaletteSearchView = function() {
 	}
 	this.renderTiles = async function(context, canvas) {
 		var view = context.view;
+		var blob = context.blob;
 		var palette = context.palette;
 
-		var count = 2**palette.bitsPerPixel;
+		var count = 256;//2**palette.bitsPerPixel;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
@@ -86,16 +94,43 @@ export var PaletteSearchView = function() {
         var cy = view.margin.v;
         var cx = view.margin.h;
 
-		var paletteIndex = 0;
-		for (paletteIndex = 0; paletteIndex < count; ++paletteIndex) {
-			var row = Math.floor(paletteIndex/maxColumns) % maxRows;
-			var column = paletteIndex % maxColumns;
-			var y = cy + (row * vstride);
-			var x = cx + (column * hstride);
+		// pre-calculate some constants
+		var pixelsPerByte = 8 / palette.bitsPerPixel;
+		var nsm = (2**palette.bitsPerPixel) - 1;    // non-shifted mask
+	
+		var start = 0;
+		var end = start + Math.floor(count / pixelsPerByte);
 
-			// draw resultant tile
-			ctx.fillStyle = palette.ToRGB(paletteIndex);							
-			ctx.fillRect(x, y, tw, th);
-		}
+		var endian = 0;
+		var tileData = blob.slice(start, end);					
+		await tileData.arrayBuffer().then(buffer => {				
+			var bytes = new Uint8Array(buffer)
+
+			var index = 0;
+			for (index = 0; index < count; ++index) {
+				var row = Math.floor(index / maxColumns) % maxRows;
+				var column = index % maxColumns;
+				var y = cy + (row * vstride);
+				var x = cx + (column * hstride);
+
+				var ofs = Math.floor(index / pixelsPerByte);
+				var byte = bytes[ofs];
+				var pixel = 0;
+
+				if (endian == 0) {
+					var lsb = index % pixelsPerByte * palette.bitsPerPixel;		
+					//var mask = nsm << lsb;
+					pixel = (byte >> lsb) & nsm; 
+				} else {
+					var lsb = 8-palette.bitsPerPixel-(Math.floor(index % pixelsPerByte) * palette.bitsPerPixel);		
+					//var mask = nsm << lsb;
+					pixel = (byte >> lsb) & nsm; 
+				}
+
+				// draw resultant tile
+				ctx.fillStyle = palette.ToRGB(pixel);							
+				ctx.fillRect(x, y, tw, th);
+			}
+		});
     }
 }

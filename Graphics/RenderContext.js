@@ -11,7 +11,7 @@ export var RenderContext = function(attributes) {
 		_invalidateReq = true;
 	}
 	
-    this.BindPalette = function(palette) {
+    this.bindPalette = function(palette) {
         this.palette = palette;
     }
 	this.beginRender = async function() {

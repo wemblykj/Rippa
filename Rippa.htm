@@ -38,11 +38,9 @@
     }
 
     function openFile(file) {
-        var tileContext = window.tileContext;
-        tileContext.blob = file;
-
-		tileContext.invalidate();
-		
+        window.tileContext.bindBinary(file);
+        window.paletteSearchContext.bindBinary(file);
+	
         render();
     }
    
@@ -53,15 +51,15 @@
     }
 
     function bindPalette() {
-        window.tileContext.BindPalette(window.tilePalette);
-        window.paletteSearchContext.BindPalette(window.tilePalette);
+        window.tileContext.bindPalette(window.tilePalette);
+        window.paletteSearchContext.bindPalette(window.systemPalette);
 
         switch(paletteViewType) {
             case 0:
-                window.paletteContext.BindPalette(window.systemPalette);
+                window.paletteContext.bindPalette(window.systemPalette);
                 break;
             case 1:
-                window.paletteContext.BindPalette(window.tilePalette);
+                window.paletteContext.bindPalette(window.tilePalette);
         }
     }
 
@@ -371,8 +369,10 @@
         0x81,
         0x7e]);
 
-        window.tileContext.blob = new Blob([testData.buffer]);
+        var blob = new Blob([testData.buffer]);
         
+        window.tileContext.bindBinary(blob);
+        window.paletteSearchContext.bindBinary(blob);
         /*var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;
         var bpp = 4;

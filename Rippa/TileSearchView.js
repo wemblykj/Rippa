@@ -14,7 +14,13 @@ var RenderContext = function(attributes) {
     this.view = new ViewAttributes();
     this.nav = new Common.Navigation();
 	this.maxConcurrentTiles = 4;
-	this.onBeginRender = async function() {
+	this.bindBinary = function(blob) {
+		if (blob != this.blob) {
+			this.blob = blob;
+			this.invalidate();
+		}
+	}
+ 	this.onBeginRender = async function() {
 		// just ensure tile semephore is reset
 		this.tilePromise = null;
 		this.tileCount = 0;
