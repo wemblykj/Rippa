@@ -21,3 +21,22 @@ export var Point = function(x, y) {
     this.x = x;
     this.y = y;
 }
+
+export var RGB = function(r, g, b) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.toHtml = function() {
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+}
+
+export var RGBA = function(r, g, b, a) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+    this.toHtml = function() {
+        return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+}

@@ -52,6 +52,7 @@ export var PaletteSearchView = function() {
 	this.renderTiles = async function(context, canvas) {
 		var view = context.view;
 		var blob = context.blob;
+		var packing = context.model.packing;
 		var palette = context.palette;
 
 		var count = 256;//2**palette.bitsPerPixel;
@@ -104,11 +105,10 @@ export var PaletteSearchView = function() {
         var cx = view.margin.h;
 
 		// pre-calculate some constants
-		var pixelsPerByte = 8 / palette.bitsPerPixel;
-		var nsm = (2**palette.bitsPerPixel) - 1;    // non-shifted mask
+		var nsm = (2**packing.planesPerPixel) - 1;    // non-shifted mask
 	
 		var start = 0;
-		var end = start + Math.floor(count / pixelsPerByte);
+		var end = start + Math.floor(count / packing.planesPerByte);
 
 		var endian = 0;
 		var tileData = blob.slice(start, end);					
@@ -122,16 +122,16 @@ export var PaletteSearchView = function() {
 				var y = cy + (row * vstride);
 				var x = cx + (column * hstride);
 
-				var ofs = Math.floor(index / pixelsPerByte);
+				var ofs = Math.floor(index * packing.stride);
 				var byte = bytes[ofs];
 				var pixel = 0;
 
 				if (endian == 0) {
-					var lsb = index % pixelsPerByte * palette.bitsPerPixel;		
+					var lsb = index % packing.planesPerByte * packing.planeCount;		
 					//var mask = nsm << lsb;
 					pixel = (byte >> lsb) & nsm; 
 				} else {
-					var lsb = 8-palette.bitsPerPixel-(Math.floor(index % pixelsPerByte) * palette.bitsPerPixel);		
+					var lsb = 8-packing.planeCount-(Math.floor(index % packing.planesPerByte) * packing.planeCount);		
 					//var mask = nsm << lsb;
 					pixel = (byte >> lsb) & nsm; 
 				}

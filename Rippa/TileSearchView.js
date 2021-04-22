@@ -84,9 +84,9 @@ export var TileSearchView = function() {
         var tile = model.tile;
         var packing = model.packing;
         
-        var th = (tile.size.h * view.zoom.v) + view.spacing.v;
+        var th = (tile.height * view.zoom.v) + view.spacing.v;
         var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
-        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+        var tw = (tile.width * view.zoom.h) + view.spacing.h;
 		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
         if (context.invalidated) {
@@ -110,7 +110,7 @@ export var TileSearchView = function() {
         
 			await this.renderRow(context, canvas, cx, cy, offset);
 			
-			offset += (tile.size.w * maxColumns * tile.size.h) / packing.pixelsPerByte;
+			offset += (tile.width * maxColumns * tile.height) / packing.planesPerByte;
 			cy += th;
         }
     }
@@ -122,7 +122,7 @@ export var TileSearchView = function() {
         var tile = model.tile;
         var packing = model.packing;
         
-        var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
+        var tw = (tile.width * view.zoom.h) + view.spacing.h;
         //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
         var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));
         //var maxRows = Math.floor((canvas.height - (2 * view.margin.v)) / th);
@@ -140,7 +140,7 @@ export var TileSearchView = function() {
 				await context.beginTile();
 				this.drawTile(context, canvas, offset, cx, cy).then(() => context.endTile() );
 				
-				offset += (tile.size.w * tile.size.h) / packing.pixelsPerByte;
+				offset += (tile.size) / packing.planesPerByte;
 				cx += tw;
 			} else {
 				break;
@@ -152,12 +152,12 @@ export var TileSearchView = function() {
 		var blob = context.blob;
 		var palette = context.palette;
 		var view = context.view;
-		var model = context.attributes;
+		var model = context.model;
         var tile = model.tile;
         var packing = model.packing;
         
-		var start = offset;// + (tile.stride * rowIndex) / packing.pixelsPerByte;
-		var end = start + (tile.size.w * tile.size.h) / packing.pixelsPerByte;
+		var start = offset;// + (tile.stride * rowIndex) / packing.planesPerByte;
+		var end = start + (tile.size) / packing.planesPerByte;
 			
 		var tileData = blob.slice(start, end);					
 		return tileData.arrayBuffer().then(buffer => {
@@ -166,13 +166,13 @@ export var TileSearchView = function() {
 								
 			// now draw the tile		
 			var rowIndex;
-			for (rowIndex = 0; rowIndex < tile.size.h; ++rowIndex) {
-				if (tileContext.terminateRendering)
+			for (rowIndex = 0; rowIndex < tile.height; ++rowIndex) {
+				if (context.terminateRendering)
 					break;
 
 				var y = cy + (rowIndex * view.zoom.v);
 			
-				var rowOfs = (tile.size.w * rowIndex) / packing.pixelsPerByte;
+				var rowOfs = (tile.width * rowIndex) / packing.planesPerByte;
 				
 				switch(packing.packing) {
 					case 0: 
@@ -181,7 +181,7 @@ export var TileSearchView = function() {
 						
 						// get single contiguous line buffer for all planes
 						// ABCDABCD ABCDABCD ABCDABCD ABCDABCD or
-						//start = offset + (tile.stride * rowIndex) / packing.pixelsPerByte;
+						//start = offset + (tile.stride * rowIndex) / packing.planesPerByte;
 						//end = start + tile.size.w;
 
 						//tileData = blob.slice(start, end);					
@@ -193,8 +193,8 @@ export var TileSearchView = function() {
 							var nsm = (2**packing.planeCount) - 1;    // non-shifted mask
 
 							var columnIndex;
-							for (columnIndex = 0; columnIndex < tile.size.w; ++columnIndex) {
-								if (tileContext.terminateRendering)
+							for (columnIndex = 0; columnIndex < tile.width; ++columnIndex) {
+								if (context.terminateRendering)
 									break;
 
 								// initalise our pixel [ABCD]
@@ -206,16 +206,16 @@ export var TileSearchView = function() {
 									// ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH ABCDEFGH 8-bit
 									// ABCDABCD ABCDABCD ABCDABCD ABCDABCD  4-bit
 									// ABABABAB ABABABAB  2-bit
-									var ofs = rowOfs + Math.floor(columnIndex / packing.pixelsPerByte);
+									var ofs = rowOfs + Math.floor(columnIndex / packing.planesPerByte);
 									var tileByte = lineData[ofs];
 
-									if (packing.pixelsPerByte > 1) {
+									if (packing.planesPerByte > 1) {
 										if (packing.endian == 0) {
-										  var lsb = Math.floor(columnIndex % packing.pixelsPerByte) * packing.planeCount;		
+										  var lsb = Math.floor(columnIndex % packing.planesPerByte) * packing.planeCount;		
 										  //var mask = nsm << lsb;
 										  pixel = (tileByte >> lsb) & nsm; 
 										} else {
-											var lsb = 8-packing.planeCount-(Math.floor(columnIndex % packing.pixelsPerByte) * packing.planeCount);		
+											var lsb = 8-packing.planeCount-(Math.floor(columnIndex % packing.planesPerByte) * packing.planeCount);		
 											//var mask = nsm << lsb;
 											pixel = (tileByte >> lsb) & nsm; 
 										}

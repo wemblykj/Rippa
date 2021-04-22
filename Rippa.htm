@@ -244,11 +244,11 @@
         window.paletteContext = window.paletteView.createContext();
 
         window.paletteSearchView = rippa.createPaletteSearchView();
-        window.paletteSearchAttributes = window.paletteSearchView.createModel();
+        window.paletteSearchAttributes = preset.paletteSearchAttributes;
         window.paletteSearchContext = window.paletteSearchView.createContext(window.paletteSearchAttributes);
 
         window.tileSearchView = rippa.createTileSearchView();
-        window.tileSearchAttributes = window.tileSearchView.createModel();
+        window.tileSearchAttributes = preset.tileSearchAttributes;
         window.tileSearchContext = window.tileSearchView.createContext(window.tileSearchAttributes);
         
         // produce a default intensity/RGB based palette
