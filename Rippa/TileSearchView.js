@@ -1,4 +1,5 @@
 import * as Common from "../Rippa/Common.js"
+import * as Model from "../Rippa/Model.js"
 import {RenderContext as BaseRenderContext} from "../Graphics/RenderContext.js"
 
 var ViewAttributes = function(planeMask = 0xff) {
@@ -7,18 +8,24 @@ var ViewAttributes = function(planeMask = 0xff) {
     this.planeMask = planeMask;
     this.zoom = new Common.Axis(1, 1);
 }
-  
-var RenderContext = function(attributes) {
-	this.blob = null;
-	this.attributes = attributes;
+    
+var RenderContext = function(model) {
+	this.model = model;
     this.view = new ViewAttributes();
-    this.nav = new Common.Navigation();
+	this.blob = null;
+    this.nav = new Model.Navigation();
 	this.maxConcurrentTiles = 4;
 	this.bindBinary = function(blob) {
 		if (blob != this.blob) {
 			this.blob = blob;
 			this.invalidate();
 		}
+	}
+	this.bindModel = async function(model) {
+		this.model = model;
+	}
+	this.bindViewAttributes = async function(attributes) {
+		this.view = attributes;
 	}
  	this.onBeginRender = async function() {
 		// just ensure tile semephore is reset
@@ -45,8 +52,14 @@ RenderContext.prototype = new BaseRenderContext();
 RenderContext.construct = RenderContext;
 
 export var TileSearchView = function() {
-	this.createContext = function(attributes) {
-        return new RenderContext(attributes);
+	this.createContext = function(model = undefined) {
+        return new RenderContext(model);
+    }
+	this.createModel = function() {
+        return new Model.TileSearchAttributes();
+    }
+	this.createViewAttributes = function() {
+        return new ViewAttributes();
     }
     this.render = async function(context, canvas) {	
 		if (context && canvas) {
@@ -67,9 +80,9 @@ export var TileSearchView = function() {
     
     this.renderTiles = async function(context, canvas, offset) {
         var view = context.view;
-		var attr = context.attributes;
-        var tile = attr.tile;
-        var packing = attr.packing;
+		var model = context.model;
+        var tile = model.tile;
+        var packing = model.packing;
         
         var th = (tile.size.h * view.zoom.v) + view.spacing.v;
         var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / th));
@@ -105,9 +118,9 @@ export var TileSearchView = function() {
 	this.renderRow = async function(context, canvas, cx, cy, offset) {
         var blob = context.blob;
 		var view = context.view;
-		var attr = context.attributes;
-        var tile = attr.tile;
-        var packing = attr.packing;
+		var model = context.model;
+        var tile = model.tile;
+        var packing = model.packing;
         
         var tw = (tile.size.w * view.zoom.h) + view.spacing.h;
         //var th = (tile.size.h * view.zoom.v) + view.spacing.v;
@@ -139,10 +152,9 @@ export var TileSearchView = function() {
 		var blob = context.blob;
 		var palette = context.palette;
 		var view = context.view;
-		var attr = context.attributes;
-        var tile = attr.tile;
-		
-        var packing = attr.packing;
+		var model = context.attributes;
+        var tile = model.tile;
+        var packing = model.packing;
         
 		var start = offset;// + (tile.stride * rowIndex) / packing.pixelsPerByte;
 		var end = start + (tile.size.w * tile.size.h) / packing.pixelsPerByte;

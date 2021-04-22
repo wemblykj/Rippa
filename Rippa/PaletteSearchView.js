@@ -1,5 +1,6 @@
 import * as Common from "../Rippa/Common.js"
 import {RenderContext as BaseRenderContext} from "../Graphics/RenderContext.js"
+import * as Model from "../Rippa/Model.js"
 
 var ViewAttributes = function() {
     this.margin = new Common.Axis(2, 2);
@@ -7,9 +8,11 @@ var ViewAttributes = function() {
     this.zoom = new Common.Axis(1, 1);
 }
 
-var RenderContext = function() {
-	this.blob = null;
+var RenderContext = function(model = undefined) {
+	this.model = model;
 	this.view = new ViewAttributes();
+	this.nav = new Model.Navigation();
+	this.blob = null;
 	this.bindBinary = function(blob) {
 		if (blob != this.blob) {
 			this.blob = blob;
@@ -23,8 +26,14 @@ RenderContext.prototype = new BaseRenderContext();
 RenderContext.construct = RenderContext;
 
 export var PaletteSearchView = function() {
-	this.createContext = function() {
-        return new RenderContext();
+	this.createContext = function(model = undefined) {
+        return new RenderContext(model);
+    }
+	this.createModel = function() {
+        return new Model.PaletteSearchAttributes();
+    }
+	this.createViewAttributes = function() {
+        return new ViewAttributes();
     }
 	this.render = async function(context, canvas) {
 		if (context && canvas) {

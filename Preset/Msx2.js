@@ -1,6 +1,6 @@
 import {Preset} from "../Rippa/Preset.js"
-import {Attributes} from "../Rippa/Attributes.js"
 import * as Graphics from "../Graphics/Palette.js"
+import {PaletteSearchAttributes, TileSearchAttributes} from "../Rippa/Model.js"
 
 export var MSX2Screen = function(name) {
 	this.name = name;
@@ -43,7 +43,8 @@ export var MSX2Screen = function(name) {
 	
 	this.tilePalette = new Graphics.IndexedPalette(4, this.systemPalette, tilePalette);
 
-	this.attributes = new Attributes(256, 212, 4);
+	this.paletteSearchAttributes = new PaletteSearchAttributes(4);
+	this.tileSearchAttributes = new TileSearchAttributes(256, 212, 4);
 }
 
 MSX2Screen.prototype = new Preset();

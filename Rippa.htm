@@ -38,7 +38,7 @@
     }
 
     function openFile(file) {
-        window.tileContext.bindBinary(file);
+        window.tileSearchContext.bindBinary(file);
         window.paletteSearchContext.bindBinary(file);
 	
         render();
@@ -51,7 +51,7 @@
     }
 
     function bindPalette() {
-        window.tileContext.bindPalette(window.tilePalette);
+        window.tileSearchContext.bindPalette(window.tilePalette);
         window.paletteSearchContext.bindPalette(window.systemPalette);
 
         switch(paletteViewType) {
@@ -70,9 +70,8 @@
             window.rippa.render(paletteContext, paletteCanvas);
         } */
         var tileCanvas = document.getElementById('tileCanvas');
-		var tileContext = window.tileContext;
-        if (tileContext.blob !== null) {
-            window.tileSearchView.render(tileContext, tileCanvas);
+		if (window.tileSearchContext.blob !== null) {
+            window.tileSearchView.render(window.tileSearchContext, tileCanvas);
         }
 
         var paletteCanvas = document.getElementById('paletteCanvas');
@@ -97,14 +96,14 @@
         offset.value = nav.offset;
    }
 
-    function updateTileUI(tileAttr) {
+    function updateTileUI(tile) {
         var tileWidth = document.getElementById("tileWidth");
-        tileWidth.value = tileAttr.size.w;
+        tileWidth.value = tile.width;
         
         var tileHeight = document.getElementById("tileHeight");
-        tileHeight.value = tileAttr.size.h;
+        tileHeight.value = tile.height;
 		
-		window.tileContext.invalidate();
+        window.tileSearchContext.invalidate();
     }
     
     function updatePackingUI(planeAttr) {
@@ -117,12 +116,12 @@
     }
     
     function updateTileSearchViewUI() {
-        var context = window.tileContext;
+        var context = window.tileSearchContext;
 
         updateTileSearchViewSettingsUI(context.view);
         updateTileNavigationUI(context.nav);
-        updateTileUI(context.attributes.tile);
-        updatePackingUI(context.attributes.packing);
+        updateTileUI(context.model.tile);
+        updatePackingUI(context.model.packing);
     }
 
     function updatePaletteViewUI() {
@@ -136,13 +135,13 @@
     }
     
     window.onViewChanged = function(event) {
-        var context = window.tileContext;
+        var context = window.tileSearchContext;
 
         if (event.target.id == "zoom") {
             var z = parseInt(event.target.value);
             z = Math.max(50, z) / 100;
-            context.attributes.view.zoom.h = z;
-            context.attributes.view.zoom.v = z;
+            context.view.zoom.h = z;
+            context.view.zoom.v = z;
         }
         
         context.invalidate();
@@ -153,7 +152,7 @@
         if (event.target.id == "offset") {
             var offset = parseInt(event.target.value);
             offset = Math.max(0, offset);
-            window.tileContext.attributes.tileNav.offset = offset;
+            window.tileSearchContext.nav.offset = offset;
         }
         
         //tileContext.invalidate();
@@ -161,12 +160,12 @@
     }
 
     window.onTileAttrChanged = function(event) {
-        var context = window.tileContext;
+        var context = window.tileSearchContext;
         
         if (event.target.id == "tileWidth") {
-            context.attributes.tile.size.w = parseInt(event.target.value);
+            context.model.tile.width = parseInt(event.target.value);
         } else if (event.target.id == "tileHeight") {
-            context.attributes.tile.size.h = parseInt(event.target.value);
+            context.model.tile.height = parseInt(event.target.value);
         }
 
         context.invalidate();
@@ -174,14 +173,14 @@
     }
     
     window.onPlaneAttrChanged = function(event) {
-        var context = window.tileContext;
+        var context = window.tileSearchContext;
 
         if (event.target.id == "planeCount") {
-            context.attributes.packing.setPlaneCount(parseInt(event.target.value));
+            context.model.packing.setPlaneCount(parseInt(event.target.value));
         } else if (event.target.id == "planePacking") {
-            context.attributes.packing.packing = parseInt(event.target.value);
+            context.model.packing.packing = parseInt(event.target.value);
         } else if (event.target.id == "planeEndian") {
-            context.attributes.packing.endian = parseInt(event.target.value);
+            context.model.packing.littleEndian = parseInt(event.target.value) == 0;
         }
         
         context.invalidate();
@@ -222,8 +221,8 @@
         
         _resize();
 
-        if (window.tileContext)
-            window.tileContext.invalidate();
+        if (window.tileSearchContext)
+            window.tileSearchContext.invalidate();
             
 		render();
 	}
@@ -245,10 +244,12 @@
         window.paletteContext = window.paletteView.createContext();
 
         window.paletteSearchView = rippa.createPaletteSearchView();
-        window.paletteSearchContext = window.paletteSearchView.createContext();
+        window.paletteSearchAttributes = window.paletteSearchView.createModel();
+        window.paletteSearchContext = window.paletteSearchView.createContext(window.paletteSearchAttributes);
 
         window.tileSearchView = rippa.createTileSearchView();
-        window.tileContext = window.tileSearchView.createContext(attributes);
+        window.tileSearchAttributes = window.tileSearchView.createModel();
+        window.tileSearchContext = window.tileSearchView.createContext(window.tileSearchAttributes);
         
         // produce a default intensity/RGB based palette
 /*
@@ -371,7 +372,7 @@
 
         var blob = new Blob([testData.buffer]);
         
-        window.tileContext.bindBinary(blob);
+        window.tileSearchContext.bindBinary(blob);
         window.paletteSearchContext.bindBinary(blob);
         /*var rgbArray = [];//['rgb(255, 255, 255)'];
         var paletteIndex;

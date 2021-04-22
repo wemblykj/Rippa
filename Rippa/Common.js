@@ -21,7 +21,3 @@ export var Point = function(x, y) {
     this.x = x;
     this.y = y;
 }
-
-export var Navigation = function(offset = 0) {
-    this.offset = offset;
-}
