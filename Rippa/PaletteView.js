@@ -37,7 +37,7 @@ export var PaletteView = function() {
 		var view = context.view;
 		var palette = context.palette;
 
-		var count = 2**palette.bitsPerPixel;
+		var count = 2**palette.colourDepth;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
@@ -94,7 +94,7 @@ export var PaletteView = function() {
 			var x = cx + (column * hstride);
 
 			// draw resultant tile
-			ctx.fillStyle = palette.ToRGB(paletteIndex);							
+			ctx.fillStyle = palette.toRGB(paletteIndex).toHtml();
 			ctx.fillRect(x, y, tw, th);
 		}
     }

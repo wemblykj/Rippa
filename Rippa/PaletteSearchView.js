@@ -55,7 +55,7 @@ export var PaletteSearchView = function() {
 		var packing = context.model.packing;
 		var palette = context.palette;
 
-		var count = 256;//2**palette.bitsPerPixel;
+		var count = 256;//2**palette.colourDepth;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
@@ -105,10 +105,10 @@ export var PaletteSearchView = function() {
         var cx = view.margin.h;
 
 		// pre-calculate some constants
-		var nsm = (2**packing.planesPerPixel) - 1;    // non-shifted mask
+		//var nsm = (2**packing.planesPerPixel) - 1;    // non-shifted mask
 	
 		var start = 0;
-		var end = start + Math.floor(count / packing.planesPerByte);
+		var end = start + Math.floor(count * packing.span);
 
 		var endian = 0;
 		var tileData = blob.slice(start, end);					
@@ -122,11 +122,12 @@ export var PaletteSearchView = function() {
 				var y = cy + (row * vstride);
 				var x = cx + (column * hstride);
 
-				var ofs = Math.floor(index * packing.stride);
-				var byte = bytes[ofs];
-				var pixel = 0;
+				var ofs = Math.floor(index * packing.span);
+				//var byte = bytes[ofs];
+				var stream = bytes.slice(ofs, ofs+packing.span);
+				var colour = packing.decode(stream);
 
-				if (endian == 0) {
+				/*if (endian == 0) {
 					var lsb = index % packing.planesPerByte * packing.planeCount;		
 					//var mask = nsm << lsb;
 					pixel = (byte >> lsb) & nsm; 
@@ -134,10 +135,10 @@ export var PaletteSearchView = function() {
 					var lsb = 8-packing.planeCount-(Math.floor(index % packing.planesPerByte) * packing.planeCount);		
 					//var mask = nsm << lsb;
 					pixel = (byte >> lsb) & nsm; 
-				}
+				}*/
 
 				// draw resultant tile
-				ctx.fillStyle = palette.ToRGB(pixel);							
+				ctx.fillStyle = packing.toRGB(colour).toHtml();
 				ctx.fillRect(x, y, tw, th);
 			}
 		});

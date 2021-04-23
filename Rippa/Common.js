@@ -26,8 +26,8 @@ export var RGB = function(r, g, b) {
     this.r = r;
     this.g = g;
     this.b = b;
-    this.toHtml = function() {
-        return `rgb(${r}, ${g}, ${b})`;
+    this.toHtml = function(colour) {
+    return `rgb(${this.r}, ${this.g}, ${this.b})`;
     }
 }
 

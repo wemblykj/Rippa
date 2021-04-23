@@ -1,6 +1,7 @@
 import {Preset} from "../Rippa/Preset.js"
 import * as Graphics from "../Graphics/Palette.js"
 import {PaletteSearchAttributes, TileSearchAttributes} from "../Rippa/Model.js"
+import { RGB } from "../Rippa/Common.js";
 
 export var MSX2Screen = function(name) {
 	this.name = name;
@@ -14,9 +15,7 @@ export var MSX2Screen = function(name) {
 		var r = Math.floor((step_n * ((paletteIndex >> 3) & 0x07)) / step_d);
 		var g = Math.floor((step_n * ((paletteIndex >> 6) & 0x07)) / step_d);
 
-		var rgb = `rgb(${r}, ${g}, ${b})`;
-
-		systemPalette[paletteIndex] = rgb;
+		systemPalette[paletteIndex] = new RGB(r, g, b);
 	}
 
 	this.systemPalette = new Graphics.RGBPalette(9, systemPalette);

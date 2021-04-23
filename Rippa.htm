@@ -7,6 +7,7 @@
   <!--script type="module" src="Rippa.js"></script-->
   <script type="module">
     import {Rippa} from './Rippa/Rippa.js'
+    import * as Model from './Rippa/Model.js'
 	
     var paletteViewType = 1;
 
@@ -243,8 +244,14 @@
         window.paletteView = rippa.createPaletteView();
         window.paletteContext = window.paletteView.createContext();
 
+
         window.paletteSearchView = rippa.createPaletteSearchView();
         window.paletteSearchAttributes = preset.paletteSearchAttributes;
+
+        //var palettePacking = new Model.PalettePackingRGBA("rrrrrrrrggggggggbbbbbbbbxxxxxxxx");
+        var palettePacking = new Model.PalettePackingIndex(2, window.systemPalette);
+        window.paletteSearchAttributes.packing = palettePacking;
+
         window.paletteSearchContext = window.paletteSearchView.createContext(window.paletteSearchAttributes);
 
         window.tileSearchView = rippa.createTileSearchView();

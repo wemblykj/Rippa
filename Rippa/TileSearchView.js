@@ -249,7 +249,7 @@ export var TileSearchView = function() {
 								var ctx = canvas.getContext('2d');
 								
 								// draw resultant pixel
-								ctx.fillStyle = palette.ToRGB(pixel);
+								ctx.fillStyle = palette.toRGB(pixel).toHtml();
 										  
 								var x = cx + (columnIndex * view.zoom.h);
 								ctx.fillRect(x, y, view.zoom.h, view.zoom.v);	

@@ -34,24 +34,50 @@ export var PalettePacking = function() {
   }
 }
 
+export var PalettePackingIndex = function(span, systemPalette) {
+  this.span = span;
+  var systemPalette = systemPalette;
+
+  this.decode = function(stream) {
+    var colourIndex = 0;
+    var byteCount = this.span;
+    var index = 0;
+    while (byteCount-- > 0) {
+      var bitCount = 8;
+      var byte = stream[index]; //stream.read();
+      colourIndex |= (byte << (8 * index));
+      ++index;   
+    }
+
+    return colourIndex & ((2**systemPalette.colourDepth)-1);
+  }
+  this.toRGB = function(colour) {
+    return systemPalette.toRGB(colour);
+  }
+}
+PalettePackingIndex.prototype = new PalettePacking();
+PalettePackingIndex.construct = PalettePackingIndex;
+
 export var PalettePackingRGBA = function(packing = "rrrrrrrrggggggggbbbbbbbbaaaaaaaa") {
-  this.colourDepth = redDepth + greenDepth + blueDepth;
+  this.colourDepth = undefined;
   this.packing = packing;
+  this.span = packing.length / 8;
+
   this.decode = function(stream) {
     var r = 0;
     var g = 0;
     var b = 0;
     var a = 0;
-
-    var byteCount = packing.length() / 8;
+    
+    var byteCount = this.span;
     var index = 0;
     while (byteCount-- > 0) {
       var bitCount = 8;
-      var byte = stream.read();
-      while (bitCount > 0) {
+      var byte = stream[index++]; //stream.read();
+      while (bitCount-- > 0) {
         var mask = 1 << bitCount;
         var bit = (byte & mask) ? 1 : 0
-        --bitCount;
+        //--bitCount;
         switch(packing[index]) {
           case 'x':
             break;
@@ -79,11 +105,14 @@ export var PalettePackingRGBA = function(packing = "rrrrrrrrggggggggbbbbbbbbaaaa
 
     return (this.alphaDepth > 0) ? new Common.RGBA(r, g, b, a) : new Common.RGB(r, g, b); 
   }
+  this.toRGB = function(colour) {
+    return colour.toRGB();
+  }
   this.setPacking = function(packing) {
     var index;
     this.colourDepth = 0;
     this.alphaDepth = 0;
-    for (index = 0; index < packing.length(); ++index) {
+    for (index = 0; index < packing.length; ++index) {
       switch(packing[index]) {
         case 'x':
           break;
