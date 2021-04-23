@@ -6,35 +6,57 @@ canvas {
     height: 100%;
 }
 
-.greedy{
-    width: auto;
-    height: auto;
+.left{
+    float: left;
+}
+
+.right{
+    float: right;
 }
 
 .container{
     /* float: left; */
-    display: block;
-    width: 30%;
-  
+    display: table;
+    width: 100%;
+    height: auto;
   }
 
-.Pane {
-    margin: 1em;
-    display: table;
+.header{
+    width: 100%;
+    height: auto;
+    vertical-align: top;
 }
 
-.HeaderPane {
+.footer{
+    width: 100%;
+    height: auto;
+    vertical-align: bottom;
 }
 
-.TilePane {
-    float: left;
+.view{
+    width: 100%;
+    height: 100%;
 }
 
-.PalettePane {
-    float: right;
-
+.controls{
+    width: 100%;
+    height: auto;
+    vertical-align: bottom;
 }
 
-.Controls {
-    position:relative;
+/*#HeaderPane {
+}*/
+
+#TileUI {
+    width: 75%;
+    height: 100%;
+}
+
+#PaletteUI{
+    width: 25%;
+    height: 100%;
+}
+
+#Controls{
+    height: auto;
 }
