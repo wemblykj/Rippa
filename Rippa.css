@@ -15,22 +15,32 @@ canvas {
 }
 
 .container{
-    /* float: left; */
     display: table;
     width: 100%;
-    height: auto;
   }
 
 .header{
-    width: 100%;
-    height: auto;
+    border-width: 1px;
+    border-style: solid;
+    border-color: Black;
     vertical-align: top;
 }
 
 .footer{
-    width: 100%;
-    height: auto;
-    vertical-align: bottom;
+    border-width: 1px;
+    border-style: solid;
+    border-color: Black;
+}
+
+.content{
+    border-width: 1px;
+    border-style: solid;
+    border-color: Black;
+}
+
+.pane{
+    margin: 0.4em;
+    padding: 0.3em;
 }
 
 .view{
@@ -41,19 +51,18 @@ canvas {
 .controls{
     width: 100%;
     height: auto;
-    vertical-align: bottom;
 }
 
 /*#HeaderPane {
 }*/
 
 #TileUI {
-    width: 75%;
+    width: max-content;
     height: 100%;
 }
 
 #PaletteUI{
-    width: 25%;
+    width: min-content;
     height: 100%;
 }
 
