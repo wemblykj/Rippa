@@ -16,7 +16,7 @@ export var PixelPacking = function(planeCount) {
     //this.planesPerByte = 8/planeCount; 
     this.packing = 0;
     this.littleEndian = false;
-    this.decode = function(stream) {
+    this.decode = async function(stream) {
       undefined;
     }
     this.setPlaneCount = function(planeCount) {
@@ -38,14 +38,12 @@ export var PalettePackingIndex = function(span, systemPalette) {
   this.span = span;
   var systemPalette = systemPalette;
 
-  this.decode = function(stream) {
+  this.decode = async function(byteStream) {
     var colourIndex = 0;
     var byteCount = this.span;
     var index = 0;
     while (byteCount-- > 0) {
-      var bitCount = 8;
-      var byte = stream[index]; //stream.read();
-      colourIndex |= (byte << (8 * index));
+      await byteStream.getByte().then(byte => { colourIndex |= (byte << (8 * index)); });
       ++index;   
     }
 
@@ -63,7 +61,7 @@ export var PalettePackingRGBA = function(packing = "rrrrrrrrggggggggbbbbbbbbaaaa
   this.packing = packing;
   this.span = packing.length / 8;
 
-  this.decode = function(stream) {
+  this.decode = async function(byteStream) {
     var r = 0;
     var g = 0;
     var b = 0;
@@ -73,34 +71,35 @@ export var PalettePackingRGBA = function(packing = "rrrrrrrrggggggggbbbbbbbbaaaa
     var index = 0;
     while (byteCount-- > 0) {
       var bitCount = 8;
-      var byte = stream[index++]; //stream.read();
-      while (bitCount-- > 0) {
-        var mask = 1 << bitCount;
-        var bit = (byte & mask) ? 1 : 0
-        //--bitCount;
-        switch(packing[index]) {
-          case 'x':
-            break;
-          case 'r':
-            r <<= 1;
-            r |= bit;
-            break;
-          case 'g':
-            g <<= 1;
-            g |= bit;
-            break;
-          case 'b':
-            b <<= 1;
-            b |= bit;
-            break;
-          case 'a':
-            a <<= 1;
-            a |= bit;
-            break;
-          default:
-            undefined;   
+      await byteStream.getByte().then(btye => {
+        while (bitCount-- > 0) {
+          var mask = 1 << bitCount;
+          var bit = (byte & mask) ? 1 : 0
+          //--bitCount;
+          switch(packing[index]) {
+            case 'x':
+              break;
+            case 'r':
+              r <<= 1;
+              r |= bit;
+              break;
+            case 'g':
+              g <<= 1;
+              g |= bit;
+              break;
+            case 'b':
+              b <<= 1;
+              b |= bit;
+              break;
+            case 'a':
+              a <<= 1;
+              a |= bit;
+              break;
+            default:
+              undefined;   
+          }
         }
-      }
+      });
     }
 
     return (this.alphaDepth > 0) ? new Common.RGBA(r, g, b, a) : new Common.RGB(r, g, b); 

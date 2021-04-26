@@ -1,6 +1,7 @@
 import * as Common from "../Rippa/Common.js"
 import {RenderContext as BaseRenderContext} from "../Graphics/RenderContext.js"
 import * as Model from "../Rippa/Model.js"
+import { ByteStream } from "./ByteStream.js";
 
 var ViewAttributes = function() {
     this.margin = new Common.Axis(2, 2);
@@ -108,12 +109,13 @@ export var PaletteSearchView = function() {
 		//var nsm = (2**packing.planesPerPixel) - 1;    // non-shifted mask
 	
 		var start = 0;
-		var end = start + Math.floor(count * packing.span);
+		var end = start + Math.floor(count * packing.span) + 10;
 
 		var endian = 0;
-		var tileData = blob.slice(start, end);					
-		await tileData.arrayBuffer().then(buffer => {				
-			var bytes = new Uint8Array(buffer)
+		var stream = blob.slice(start, end).stream();
+		var byteStream = new ByteStream(stream);					
+		//await tileData.arrayBuffer().then(buffer => {				
+			//var bytes = new Uint8Array(buffer)
 
 			var index = 0;
 			for (index = 0; index < count; ++index) {
@@ -124,8 +126,8 @@ export var PaletteSearchView = function() {
 
 				var ofs = Math.floor(index * packing.span);
 				//var byte = bytes[ofs];
-				var stream = bytes.slice(ofs, ofs+packing.span);
-				var colour = packing.decode(stream);
+				//var stream = bytes.slice(ofs, ofs+packing.span);
+				var colour = await packing.decode(byteStream);
 
 				/*if (endian == 0) {
 					var lsb = index % packing.planesPerByte * packing.planeCount;		
@@ -141,6 +143,6 @@ export var PaletteSearchView = function() {
 				ctx.fillStyle = packing.toRGB(colour).toHtml();
 				ctx.fillRect(x, y, tw, th);
 			}
-		});
+		//});
     }
 }
