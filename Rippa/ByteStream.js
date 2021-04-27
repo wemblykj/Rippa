@@ -4,47 +4,60 @@ export var ByteStream = function(stream) {
 	var frontBuffer = null;
 	var backBuffer = null;
  	
-	this.isEos = function() {
-		return frontBuffer == null || (bufferIndex == frontBuffer.length && backBuffer == null);
+	var _eos = false;
+
+	this.isEos = async function() {
+		await frontBufferPromise;
+		return _eos;
 	}
 	this.getByte = async function() {
-		return new Promise(async(resolve, reject) => { 
-			await frontBufferPromise;
-			if (frontBuffer == null) {
-				reject(new Error('end of stream'));
-				return;
+		await frontBufferPromise.then(({eos, buffer}) => {
+			if (eos || buffer == null) {
+				throw new Error(new Error('end of stream'));
 			}
-
-			if (bufferIndex == frontBuffer.length) {
-				await swapBuffers();
-			}
-	
-			var byte = frontBuffer[bufferIndex++];
-
-			resolve(byte);
 		});
+
+		var byte = frontBuffer[bufferIndex];
+
+		if (++bufferIndex == frontBuffer.length) {
+			frontBufferPromise = swapBuffers();
+		}
         
+		return byte;
 	}
 	var fillBuffer = async function(buffer) {
-		return new Promise(async(resolve, reject) => { 
-			await reader.read().then(({done, value}) => { 
-				if (done) {
-					resolve(null);
-				} else {
-					resolve(value);
-				}
-			})
+		return reader.read().then(({done, value}) => { 
+			if (done) {
+				return { eos: true, buffer: null };
+			}
+			
+			return { eos: false, buffer: value };
 		})
-        
     }
     var swapBuffers = async function() {
 		await backBufferPromise;
 		frontBuffer = backBuffer;
 		bufferIndex = 0;
 		backBuffer = null;
-        backBufferPromise = fillBuffer().then(buffer => { backBuffer = buffer });
+
+		if (frontBuffer != null) {
+			backBufferPromise = fillBuffer().then(({eos, buffer}) => { backBuffer = buffer });
+			return { eos: false, buffer: frontBuffer };
+		} else {
+			_eos = true;
+			return { eos: true, buffer: null };
+		}
     }
 
-    var frontBufferPromise = fillBuffer().then(buffer => { frontBuffer = buffer });
-	var backBufferPromise = fillBuffer().then(buffer => { backBuffer = buffer });
+	var backBufferPromise;
+    var frontBufferPromise = fillBuffer().then(({eos, buffer}) => { 
+		frontBuffer = buffer; 
+		if (!eos) {
+			backBufferPromise = fillBuffer().then(({eos, buffer}) => { backBuffer = buffer; });
+		} else {
+			_eos = true;
+		} 	
+		
+		return {eos, buffer};
+	});
 }

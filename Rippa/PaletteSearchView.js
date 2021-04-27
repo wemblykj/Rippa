@@ -119,6 +119,10 @@ export var PaletteSearchView = function() {
 
 			var index = 0;
 			for (index = 0; index < count; ++index) {
+				if (await byteStream.isEos()) {
+					break;
+				}
+
 				var row = Math.floor(index / maxColumns) % maxRows;
 				var column = index % maxColumns;
 				var y = cy + (row * vstride);
