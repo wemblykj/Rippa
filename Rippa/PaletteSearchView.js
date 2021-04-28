@@ -41,10 +41,10 @@ export var PaletteSearchView = function() {
 		if (context && canvas) {
 			await context.beginRender();
 			
-			if (context.invalidated) {
+			//if (context.invalidated) {
 				var ctx = canvas.getContext('2d');
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-			}
+			//}
 
 			await this.renderTiles(context, canvas);
 			
@@ -114,6 +114,7 @@ export var PaletteSearchView = function() {
 
 		var ctx = canvas.getContext('2d');
 
+		/*
         //if (context.invalidated) {
             var bw = 2 * view.margin.h + (maxColumns * hstride);
             var bh = 2 * view.margin.v + (maxRows * vstride);
@@ -121,6 +122,7 @@ export var PaletteSearchView = function() {
             ctx.fillStyle = view.backgroundColour.toHtml();
             ctx.fillRect(0,0, bw, bh);
         //}
+		*/
         
         var cy = view.margin.v;
         var cx = view.margin.h;

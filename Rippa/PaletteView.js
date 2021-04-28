@@ -75,13 +75,13 @@ export var PaletteView = function() {
 
 		var ctx = canvas.getContext('2d');
 
-        if (context.invalidated) {
+        /*if (context.invalidated) {
             var bw = 2 * view.margin.h + (maxColumns * hstride);
             var bh = 2 * view.margin.v + (maxRows * vstride);
         
             ctx.fillStyle = 'rgb(80, 80, 80)';
             ctx.fillRect(0,0, bw, bh);
-        }
+        }*/
         
         var cy = view.margin.v;
         var cx = view.margin.h;

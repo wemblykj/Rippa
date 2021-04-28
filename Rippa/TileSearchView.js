@@ -89,7 +89,7 @@ export var TileSearchView = function() {
         var tw = (tile.width * view.zoom.h) + view.spacing.h;
 		var maxColumns = Math.max(1, Math.floor((canvas.width - (2 * view.margin.h)) / tw));	
 
-        if (context.invalidated) {
+        /*if (context.invalidated) {
 			var ctx = canvas.getContext('2d');
 
             var bw = 2 * view.margin.h + (maxColumns * tw);
@@ -97,7 +97,7 @@ export var TileSearchView = function() {
         
             ctx.fillStyle = 'rgb(80, 80, 80)';
             ctx.fillRect(0,0, bw, bh);
-        }
+        }*/
         
         var cy = view.margin.v;
         

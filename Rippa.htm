@@ -71,6 +71,11 @@
     
    function renderTileView() { 
         var tileCanvas = document.getElementById('tileCanvas');
+
+        var clientRect = tileCanvas.parentNode.getBoundingClientRect();
+		//tileCanvas.width = clientRect.width;
+		//tileCanvas.height = clientRect.height;
+
 		if (window.tileSearchContext.blob !== null) {
             window.tileSearchView.render(window.tileSearchContext, tileCanvas);
         }
@@ -221,15 +226,15 @@
     function _resize() {
         var tileCanvas = document.getElementById('tileCanvas');
 		
-		var clientRect = tileCanvas.getBoundingClientRect();
-		tileCanvas.width = clientRect.width;
-		tileCanvas.height = clientRect.height;
+		//var clientRect = tileCanvas.parentNode.getBoundingClientRect();
+		//tileCanvas.width = clientRect.width;
+		///tileCanvas.height = clientRect.height;
 
         var paletteCanvas = document.getElementById('paletteCanvas');
 		
-		var paletteCanvasRect = paletteCanvas.getBoundingClientRect();
-		paletteCanvas.width = paletteCanvasRect.width;
-		paletteCanvas.height = paletteCanvasRect.height;
+		//var paletteCanvasRect = paletteCanvas.parentNode.getBoundingClientRect();
+		//paletteCanvas.clientWidth = paletteCanvasRect.width;
+		//paletteCanvas.clientHeight = paletteCanvasRect.height;
     }
 
 	window.onResize = function() {
@@ -425,47 +430,47 @@
  <body onload="onLoad()" onresize="onResize()">
     <div class="container" id="UIContainer">
         <div class="header pane" id="HeaderPane">
-            <input id="fileSelect" type="file" onchange="onOpenFile(event)"/>
+            <input class="control" id="fileSelect" type="file" onchange="onOpenFile(event)"/>
         </div>
         <div class="content pane" id="ContentPane">
             <div class="container" id="ContentContainer">
                 <div class="left pane" id="TileUI">
-                    <div class="container2" id="">
+                    <div class="container" id="">
                         <div class="view" id="TileSearchView">
-                            <canvas class="greedy" id="tileCanvas"></canvas>
+                            <canvas id="tileCanvas"></canvas>
                         </div>
                         <div class="controls" id="TileControls">
                             <div>
                                 <label for="zoom">Zoom</label>
-                                <input id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
+                                <input class="control" id="zoom" type="number" min="50" max="800" value="100" onchange="onViewChanged(event); return false;"/>
                             </div>
                             <div>
                                 <label for="offset">Offset</label>
-                                <input id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
+                                <input class="control" id="offset" type="number" min="0" value="0" onchange="onNavigationChanged(event); return false;"/>
                             </div>
                             <div>
                                 <label for="tileWidth">Tile width</label>
-                                <input id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
+                                <input class="control" id="tileWidth" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
                                 <label for="tileHeight">Tile height</label>
-                                <input id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
+                                <input class="control" id="tileHeight" type="number" min="1" max="1024" onchange="onTileAttrChanged(event); return false;"/>
                             </div>
                             <div>
                                 <label for="planeCount">Plane count</label>
-                                <select id="planeCount" type="number" onchange="onPlaneAttrChanged(event); return false;">
+                                <select class="control" id="planeCount" type="number" onchange="onPlaneAttrChanged(event); return false;">
                                     <option value="1">1-bit</option>
                                     <option value="2">2-bit</option>
                                     <option value="4">4-bit</option>
                                     <option value="8">8-bit</option>
                                 </select>
                                 <label for="planePacking">Plane packing</label>
-                                <select id="planePacking" type="number" onchange="onPlaneAttrChanged(event); return false;">
+                                <select class="control" id="planePacking" type="number" onchange="onPlaneAttrChanged(event); return false;">
                                     <option value="0">Interleaved</option>
                                     <option value="1">Byte</option>
                                     <option value="2">Line</option>
                                     <option value="3">Tile</option>
                                 </select>
                                 <label for="planeEndian">Plane endianess</label>
-                                <select id="planeEndian" type="number" onchange="onPlaneAttrChanged(event); return false;">
+                                <select class="control" id="planeEndian" type="number" onchange="onPlaneAttrChanged(event); return false;">
                                     <option value="0">Little</option>
                                     <option value="1">Big</option>
                                 </select>
@@ -474,14 +479,14 @@
                     </div>
                 </div>
                 <div class="left pane" id="PaletteUI">
-                    <div class="container2">
+                    <div class="container">
                         <div class="view" id="PaletteView">
-                            <canvas id="paletteCanvas" ></canvas>
+                            <canvas id="paletteCanvas"></canvas>
                         </div>
                         <div class="controls" id="PaletteControls">
                             <div>
                                 <label for="paletteViewType">View</label>
-                                <select id="paletteViewType" type="number" onchange="onPaletteViewChanged(event); return false;">
+                                <select class="control" id="paletteViewType" type="number" onchange="onPaletteViewChanged(event); return false;">
                                     <option value="0">System</option>
                                     <option value="1">Tile</option>
                                     <option value="2">Search</option>
@@ -493,9 +498,9 @@
                             </div-->
                             <div>
                                 <label for="paletteSearchOffset">Offset</label>
-                                <input id="paletteSearchOffset" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
-                                <label for="paletteSearchSize">Offset</label>
-                                <input id="paletteSearchSize" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
+                                <input class="control" id="paletteSearchOffset" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
+                                <label for="paletteSearchSize">Length</label>
+                                <input class="control" id="paletteSearchSize" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
                             </div>
                         </div>
                     </div>
