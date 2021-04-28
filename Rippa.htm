@@ -65,16 +65,18 @@
     }
 
     function render() { 
-        /*var paletteCanvas = document.getElementById('paletteCanvas');
-		var paletteContext = window.paletteContext;
-        if (paletteContext.blob !== null) {
-            window.rippa.render(paletteContext, paletteCanvas);
-        } */
+        renderTileView();
+        renderPaletteView();
+   }
+    
+   function renderTileView() { 
         var tileCanvas = document.getElementById('tileCanvas');
 		if (window.tileSearchContext.blob !== null) {
             window.tileSearchView.render(window.tileSearchContext, tileCanvas);
         }
+   }
 
+   function renderPaletteView() { 
         var paletteCanvas = document.getElementById('paletteCanvas');
         switch(paletteViewType) {
             case 0:
@@ -86,7 +88,7 @@
                 break;
         }
    }
-    
+
    function updateTileSearchViewSettingsUI(view) {
         var zoomCtl = document.getElementById("zoom");
         zoomCtl.value = Math.floor(view.zoom.h * 100);
@@ -128,6 +130,12 @@
     function updatePaletteViewUI() {
         var paletteViewTypeCtrl = document.getElementById("paletteViewType");
         paletteViewTypeCtrl.value = paletteViewType
+
+        var paletteSearchOffsetCtrl = document.getElementById("paletteSearchOffset");
+        paletteSearchOffsetCtrl.value = window.paletteSearchContext.nav.offset;
+
+        var paletteSearchSizeCtrl = document.getElementById("paletteSearchSize");
+        paletteSearchSizeCtrl.value = window.paletteSearchContext.nav.size;
     }
 
     function updateUI() {
@@ -146,7 +154,7 @@
         }
         
         context.invalidate();
-        render();
+        renderTileView();
     }
     
     window.onNavigationChanged = function(event) {
@@ -157,7 +165,7 @@
         }
         
         //tileContext.invalidate();
-        render();
+        renderTileView();
     }
 
     window.onTileAttrChanged = function(event) {
@@ -170,7 +178,7 @@
         }
 
         context.invalidate();
-        render();
+        renderTileView();
     }
     
     window.onPlaneAttrChanged = function(event) {
@@ -185,7 +193,7 @@
         }
         
         context.invalidate();
-        render();
+        renderTileView();
     }
     
     window.onPaletteViewChanged = function(event) {
@@ -199,9 +207,15 @@
                     window.paletteContext.invalidate();
                     break;
             }
+        } else if (event.target.id == "paletteSearchOffset") {
+            window.paletteSearchContext.nav.offset = parseInt(event.target.value);
+            //window.paletteContext.invalidate();
+        } else if (event.target.id == "paletteSearchSize") {
+            window.paletteSearchContext.nav.size = parseInt(event.target.value);
+            //window.paletteContext.invalidate();
         }
         
-        render();
+        renderPaletteView();
     }
 
     function _resize() {
@@ -473,13 +487,15 @@
                                     <option value="2">Search</option>
                                 </select>
                             </div>
-                            <div>
+                            <!--div>
                                 <label for="zoom">Zoom</label>
                                 <input id="zoom" type="number" min="50" max="800" value="100" onchange="onPaletteViewChanged(event); return false;"/>
-                            </div>
+                            </div-->
                             <div>
-                                <label for="offset">Offset</label>
-                                <input id="offset" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
+                                <label for="paletteSearchOffset">Offset</label>
+                                <input id="paletteSearchOffset" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
+                                <label for="paletteSearchSize">Offset</label>
+                                <input id="paletteSearchSize" type="number" min="0" value="0" onchange="onPaletteViewChanged(event); return false;"/>
                             </div>
                         </div>
                     </div>

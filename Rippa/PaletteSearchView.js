@@ -7,6 +7,7 @@ var ViewAttributes = function() {
     this.margin = new Common.Axis(2, 2);
     this.spacing = new Common.Axis(1, 1);
     this.zoom = new Common.Axis(1, 1);
+	this.backgroundColour = new Common.RGB(80, 80, 80);
 }
 
 var RenderContext = function(model = undefined) {
@@ -52,16 +53,27 @@ export var PaletteSearchView = function() {
 	}
 	this.renderTiles = async function(context, canvas) {
 		var view = context.view;
+		var nav = context.nav;
 		var blob = context.blob;
 		var packing = context.model.packing;
 		var palette = context.palette;
 
-		var count = 256;//2**palette.colourDepth;
 		var best_size = 8;
 		var temp_size = best_size;
 		var tooBig = false;
 		var tooSmall = false;
 		
+		var start = nav.offset;
+		var size = blob.size - start;
+		if (nav.size > 0) {
+			size = Math.min(size, nav.size);
+		}
+		
+		var count = Math.floor(size / packing.span);
+		count = Math.min(count, 4096);
+
+		var maxTile = 0;
+
 		while(true) {
 			var hstride = temp_size + view.spacing.v;
 			var vstride = temp_size + view.spacing.h;
@@ -69,7 +81,7 @@ export var PaletteSearchView = function() {
 			var maxColumns = Math.max(4, 8 * Math.floor((canvas.width - (2 * view.margin.h)) / (hstride*8)));	
 			var maxRows = Math.max(1, Math.floor((canvas.height - (2 * view.margin.v)) / vstride));
 			
-			var maxTile = maxRows*maxColumns;
+			maxTile = maxRows*maxColumns;
 			if (count == maxTile) {
 				break;
 			} else if (count > maxTile) {
@@ -77,7 +89,13 @@ export var PaletteSearchView = function() {
 					break;
 				}*/
 				tooBig = true;
-				--temp_size;
+				if (temp_size > 4) {
+					--temp_size;
+				} else {
+					count = maxTile;
+					best_size = temp_size;
+					break;
+				}
 			} else {
 				best_size = temp_size;
 				if (tooBig) {
@@ -89,64 +107,44 @@ export var PaletteSearchView = function() {
 			}			
 		};
 		
+		var end = start + (count * packing.span);
+
 		var tw = best_size;
 		var th = best_size;
 
 		var ctx = canvas.getContext('2d');
 
-        if (context.invalidated) {
+        //if (context.invalidated) {
             var bw = 2 * view.margin.h + (maxColumns * hstride);
             var bh = 2 * view.margin.v + (maxRows * vstride);
         
-            ctx.fillStyle = 'rgb(80, 80, 80)';
+            ctx.fillStyle = view.backgroundColour.toHtml();
             ctx.fillRect(0,0, bw, bh);
-        }
+        //}
         
         var cy = view.margin.v;
         var cx = view.margin.h;
 
-		// pre-calculate some constants
-		//var nsm = (2**packing.planesPerPixel) - 1;    // non-shifted mask
-	
-		var start = 0;
-		var end = start + Math.floor(count * packing.span) + 10;
-
-		var endian = 0;
 		var stream = blob.slice(start, end).stream();
 		var byteStream = new ByteStream(stream);					
-		//await tileData.arrayBuffer().then(buffer => {				
-			//var bytes = new Uint8Array(buffer)
 
-			var index = 0;
-			for (index = 0; index < count; ++index) {
-				if (await byteStream.isEos()) {
-					break;
-				}
-
-				var row = Math.floor(index / maxColumns) % maxRows;
-				var column = index % maxColumns;
-				var y = cy + (row * vstride);
-				var x = cx + (column * hstride);
-
-				var ofs = Math.floor(index * packing.span);
-				//var byte = bytes[ofs];
-				//var stream = bytes.slice(ofs, ofs+packing.span);
-				var colour = await packing.decode(byteStream);
-
-				/*if (endian == 0) {
-					var lsb = index % packing.planesPerByte * packing.planeCount;		
-					//var mask = nsm << lsb;
-					pixel = (byte >> lsb) & nsm; 
-				} else {
-					var lsb = 8-packing.planeCount-(Math.floor(index % packing.planesPerByte) * packing.planeCount);		
-					//var mask = nsm << lsb;
-					pixel = (byte >> lsb) & nsm; 
-				}*/
-
-				// draw resultant tile
-				ctx.fillStyle = packing.toRGB(colour).toHtml();
-				ctx.fillRect(x, y, tw, th);
+		var index = 0;
+		for (index = 0; index < count; ++index) {
+			if (await byteStream.isEos()) {
+				break;
 			}
-		//});
+			
+			var colour = await packing.decode(byteStream);
+			var rgb = packing.toRGB(colour)
+			
+			var row = Math.floor(index / maxColumns) % maxRows;
+			var column = index % maxColumns;
+			var y = cy + (row * vstride);
+			var x = cx + (column * hstride);
+
+			// draw resultant tile
+			ctx.fillStyle = rgb.toHtml();
+			ctx.fillRect(x, y, tw, th);
+		}
     }
 }
