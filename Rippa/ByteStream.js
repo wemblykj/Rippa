@@ -11,12 +11,14 @@ export var ByteStream = function(stream) {
 		return _eos;
 	}
 	this.getByte = async function() {
-		await frontBufferPromise.then(({eos, buffer}) => {
-			if (eos || buffer == null) {
-				throw new Error(new Error('end of stream'));
-			}
-		});
-
+		if (frontBuffer == null) {
+			await frontBufferPromise.then(({eos, buffer}) => {
+				if (eos || buffer == null) {
+					throw new Error(new Error('end of stream'));
+				}
+			});
+		}
+		
 		var byte = frontBuffer[bufferIndex];
 
 		if (++bufferIndex == frontBuffer.length) {
@@ -35,7 +37,10 @@ export var ByteStream = function(stream) {
 		})
     }
     var swapBuffers = async function() {
-		await backBufferPromise;
+		if (backBuffer == null) {
+			await backBufferPromise;
+		}
+		
 		frontBuffer = backBuffer;
 		bufferIndex = 0;
 		backBuffer = null;

@@ -13,7 +13,7 @@ var RenderContext = function(model) {
 	this.model = model;
     this.view = new ViewAttributes();
 	this.blob = null;
-    this.nav = new Model.Navigation();
+    this.slice = new Model.Slice();
 	this.maxConcurrentTiles = 4;
 	this.bindBinary = function(blob) {
 		if (blob != this.blob) {
@@ -65,7 +65,7 @@ export var TileSearchView = function() {
 		if (context && canvas) {
 			await context.beginRender();
 			
-			var offset = context.nav.offset;
+			var offset = context.slice.offset;
 			
 			if (context.invalidated) {
 				var ctx = canvas.getContext('2d');

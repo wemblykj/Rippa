@@ -1,7 +1,12 @@
 import * as Common from "./Common.js"
 
-export var Navigation = function(offset = 0, size=-1) {
+export var Slice = function(offset = 0, size=-1) {
   this.offset = offset;
+  this.size = size;
+}
+
+export var Selection = function(start = 0, size=-1) {
+  this.start = start;
   this.size = size;
 }
 
@@ -48,6 +53,12 @@ export var PalettePackingIndex = function(span, systemPalette) {
     }
 
     return colourIndex & ((2**systemPalette.colourDepth)-1);
+  }
+  this.selectionToSlice = function(selection) {
+    return new Slice(selection.start*this.span, selection.size*this.span);
+  }
+  this.sliceToSelection = function(slice) {
+    return new Selection(slice.start/this.span, slice.size/this.span);
   }
   this.toRGB = function(colour) {
     return systemPalette.toRGB(colour);

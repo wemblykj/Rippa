@@ -127,7 +127,7 @@
         var context = window.tileSearchContext;
 
         updateTileSearchViewSettingsUI(context.view);
-        updateTileNavigationUI(context.nav);
+        updateTileNavigationUI(context.slice);
         updateTileUI(context.model.tile);
         updatePackingUI(context.model.packing);
     }
@@ -137,10 +137,10 @@
         paletteViewTypeCtrl.value = paletteViewType
 
         var paletteSearchOffsetCtrl = document.getElementById("paletteSearchOffset");
-        paletteSearchOffsetCtrl.value = window.paletteSearchContext.nav.offset;
+        paletteSearchOffsetCtrl.value = window.paletteSearchContext.slice.offset;
 
         var paletteSearchSizeCtrl = document.getElementById("paletteSearchSize");
-        paletteSearchSizeCtrl.value = window.paletteSearchContext.nav.size;
+        paletteSearchSizeCtrl.value = window.paletteSearchContext.slice.size;
     }
 
     function updateUI() {
@@ -166,7 +166,7 @@
         if (event.target.id == "offset") {
             var offset = parseInt(event.target.value);
             offset = Math.max(0, offset);
-            window.tileSearchContext.nav.offset = offset;
+            window.tileSearchContext.slice.offset = offset;
         }
         
         //tileContext.invalidate();
@@ -213,10 +213,10 @@
                     break;
             }
         } else if (event.target.id == "paletteSearchOffset") {
-            window.paletteSearchContext.nav.offset = parseInt(event.target.value);
+            window.paletteSearchContext.slice.offset = parseInt(event.target.value);
             //window.paletteContext.invalidate();
         } else if (event.target.id == "paletteSearchSize") {
-            window.paletteSearchContext.nav.size = parseInt(event.target.value);
+            window.paletteSearchContext.slice.size = parseInt(event.target.value);
             //window.paletteContext.invalidate();
         }
         

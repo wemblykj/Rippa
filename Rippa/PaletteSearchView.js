@@ -8,12 +8,14 @@ var ViewAttributes = function() {
     this.spacing = new Common.Axis(1, 1);
     this.zoom = new Common.Axis(1, 1);
 	this.backgroundColour = new Common.RGB(80, 80, 80);
+	this.highlightColour = new Common.RGB(255, 255, 255);
 }
 
 var RenderContext = function(model = undefined) {
 	this.model = model;
 	this.view = new ViewAttributes();
-	this.nav = new Model.Navigation();
+	this.slice = new Model.Slice();
+	this.selection = new Model.Selection(0, 10);
 	this.blob = null;
 	this.bindBinary = function(blob) {
 		if (blob != this.blob) {
@@ -53,7 +55,8 @@ export var PaletteSearchView = function() {
 	}
 	this.renderTiles = async function(context, canvas) {
 		var view = context.view;
-		var nav = context.nav;
+		var slice = context.slice;
+		var selection = context.selection;
 		var blob = context.blob;
 		var packing = context.model.packing;
 		var palette = context.palette;
@@ -63,10 +66,10 @@ export var PaletteSearchView = function() {
 		var tooBig = false;
 		var tooSmall = false;
 		
-		var start = nav.offset;
+		var start = slice.offset;
 		var size = blob.size - start;
-		if (nav.size > 0) {
-			size = Math.min(size, nav.size);
+		if (slice.size > 0) {
+			size = Math.min(size, slice.size);
 		}
 		
 		var count = Math.floor(size / packing.span);
@@ -130,6 +133,8 @@ export var PaletteSearchView = function() {
 		var stream = blob.slice(start, end).stream();
 		var byteStream = new ByteStream(stream);					
 
+		var selectionEnd = selection.start + selection.size;
+
 		var index = 0;
 		for (index = 0; index < count; ++index) {
 			if (await byteStream.isEos()) {
@@ -147,6 +152,13 @@ export var PaletteSearchView = function() {
 			// draw resultant tile
 			ctx.fillStyle = rgb.toHtml();
 			ctx.fillRect(x, y, tw, th);
+
+			// draw selection
+			if (selection.size > 0 && index >= selection.start && index < selectionEnd) {
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = view.highlightColour.toHtml();
+				ctx.strokeRect(x, y, tw, th);
+			}
 		}
     }
 }
